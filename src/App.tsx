@@ -1,7 +1,8 @@
 // Путь: src/App.tsx
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from './auth/AuthProvider'
+import { supabase } from './lib/supabase'
 import AuthScreen from './screens/AuthScreen'
 import HomeScreen from './screens/HomeScreen'
 import EmployeesScreen from './screens/EmployeesScreen'
@@ -12,6 +13,8 @@ import StatsScreen from './screens/StatsScreen'
 import ProfileScreen from './screens/ProfileScreen'
 import InsightScreen from './screens/InsightScreen'
 import LearnScreen from './screens/LearnScreen'
+import ShareScreen from './screens/ShareScreen'
+import NewPasswordScreen from './screens/NewPasswordScreen'
 
 /**
  * Отвечает за правильную «точку входа».
@@ -41,8 +44,36 @@ function StartAtHome({ afterLogin }: { afterLogin: boolean }) {
   return null
 }
 
+/**
+ * Пришёл ли человек по ссылке «восстановить пароль».
+ * Supabase кладёт признак в адрес страницы (type=recovery) и почти сразу
+ * убирает его, поэтому проверяем адрес при первом запуске И слушаем событие.
+ */
+function useRecoveryMode(): [boolean, () => void] {
+  const [recovery, setRecovery] = useState(() => {
+    const hash = window.location.hash
+    return hash.includes('type=recovery') || new URLSearchParams(window.location.search).get('recovery') === '1'
+  })
+
+  useEffect(() => {
+    const { data } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') setRecovery(true)
+    })
+    return () => data.subscription.unsubscribe()
+  }, [])
+
+  // Закончили менять пароль: чистим адрес и возвращаемся в приложение
+  const finish = () => {
+    window.history.replaceState(null, '', window.location.pathname)
+    setRecovery(false)
+  }
+
+  return [recovery, finish]
+}
+
 export default function App() {
   const { session, loading } = useAuth()
+  const [recovery, finishRecovery] = useRecoveryMode()
 
   // Запоминаем, показывали ли мы экран входа. Если да, значит следующий
   // запуск приложения — результат входа, и начинать надо с главной.
@@ -50,6 +81,11 @@ export default function App() {
 
   if (loading) {
     return <div className="container center" style={{ paddingTop: 80 }}>Загрузка...</div>
+  }
+
+  // Ссылка из письма важнее всего остального: сначала даём задать новый пароль
+  if (recovery) {
+    return <NewPasswordScreen onDone={finishRecovery} />
   }
 
   if (!session) {
@@ -71,6 +107,7 @@ export default function App() {
         <Route path="/review" element={<CardsScreen mode="review" />} />
         <Route path="/stats" element={<StatsScreen />} />
         <Route path="/profile" element={<ProfileScreen />} />
+        <Route path="/share" element={<ShareScreen />} />
         {/* Разбор показателя с главного экрана: known | weak | learning | new | accuracy | progress */}
         <Route path="/insight/:group" element={<InsightScreen />} />
         <Route path="*" element={<Navigate to="/" replace />} />

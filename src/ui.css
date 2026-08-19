@@ -880,3 +880,164 @@ a.chip, a.chip:hover {
   .blob, .floater, .start-btn__glow, .pick__icon, .auth__logo, .chart__bar { animation: none !important; }
   .reveal { opacity: 1 !important; transform: none !important; }
 }
+
+/* ============================================================================
+   ЧАСТЬ ТРЕТЬЯ (Этап 20): обезьянка у пароля, галочка «показать пароль»,
+   коды приглашения.
+   ============================================================================ */
+
+/* ---------- 22. ОБЕЗЬЯНКА: ЛИАНА, ПАДЕНИЕ, ПОДГЛЯДЫВАНИЕ --------------- */
+
+/* 22.1 Вступление: висит на лиане в правом верхнем углу карточки */
+.intro {
+  position: absolute;
+  top: 6px;
+  right: 30px;
+  width: 0; height: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+.intro__vine {
+  position: absolute;
+  top: -22px; left: 0;
+  display: block;
+  width: 4px; height: 62px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #7bc043 0%, #4a8c2a 100%);
+  transform-origin: top center;
+  animation: vineSwing 2.4s ease-in-out infinite alternate;
+}
+.intro__leaf   { position: absolute; top: -14px; left: -9px;  font-size: 1.1rem; }
+.intro__monkey { position: absolute; bottom: -26px; left: -14px; font-size: 1.9rem; }
+.intro__banana { position: absolute; bottom: -16px; left: 16px;  font-size: 1.1rem; transform: rotate(18deg); }
+
+@keyframes vineSwing {
+  from { transform: rotate(-7deg); }
+  to   { transform: rotate(7deg); }
+}
+
+/* 22.2 Падение: лиана распрямляется, обезьянка летит вниз, банан в сторону */
+.intro--fall .intro__vine   { animation: vineSnap .7s ease-out forwards; }
+.intro--fall .intro__monkey { animation: monkeyFall 1s cubic-bezier(.45,.05,.75,1) forwards; }
+.intro--fall .intro__banana { animation: bananaFly .85s ease-out forwards; }
+
+@keyframes vineSnap {
+  0%   { transform: rotate(6deg); }
+  35%  { transform: rotate(-10deg) scaleY(1.05); }
+  100% { transform: rotate(0) scaleY(.55); opacity: 0; }
+}
+@keyframes monkeyFall {
+  0%   { transform: translate(0, 0) rotate(0); opacity: 1; }
+  25%  { transform: translate(-4px, 26px) rotate(120deg); opacity: 1; }
+  75%  { transform: translate(2px, 132px) rotate(330deg); opacity: .9; }
+  100% { transform: translate(0, 176px) rotate(430deg); opacity: 0; }
+}
+@keyframes bananaFly {
+  0%   { transform: translate(0, 0) rotate(18deg); opacity: 1; }
+  60%  { transform: translate(58px, -34px) rotate(220deg); opacity: .9; }
+  100% { transform: translate(96px, 30px) rotate(400deg); opacity: 0; }
+}
+
+/* 22.3 Обезьянка за полем пароля */
+.pw { position: relative; }
+.pw__input { position: relative; z-index: 2; }   /* поле закрывает обезьянку собой */
+
+.peek {
+  position: absolute;
+  right: 12px;
+  bottom: calc(100% - 5px);        /* нижний край упирается в верх поля */
+  width: 42px; height: 34px;
+  overflow: hidden;                /* всё, что ниже, «спрятано за полем» */
+  z-index: 1;
+  display: block;
+  pointer-events: none;
+}
+.peek__face {
+  display: block;
+  font-size: 1.85rem;
+  line-height: 1;
+  text-align: center;
+  transform: translateY(115%);     /* до вступления не видна */
+  transition: transform .4s cubic-bezier(.3,.9,.3,1.35);
+}
+.peek.is-in.peek--watch .peek__face { transform: translateY(6%); }   /* смотрит открыто */
+.peek.is-in.peek--peek  .peek__face { transform: translateY(44%); }  /* видны только глаза */
+.peek.is-in.peek--hide  .peek__face { transform: translateY(26%); }  /* закрыла глаза */
+
+/* ---------- 23. ГАЛОЧКА «ПОКАЗАТЬ ПАРОЛЬ» ------------------------------ */
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  cursor: pointer;
+  font-size: .9rem;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.check input {
+  position: absolute;
+  opacity: 0;
+  width: 1px; height: 1px;
+}
+.check__box {
+  flex: none;
+  width: 22px; height: 22px;
+  border-radius: 7px;
+  border: 2px solid var(--border);
+  background: var(--bg-elevated);
+  display: flex; align-items: center; justify-content: center;
+  font-size: .78rem; font-weight: 900;
+  color: transparent;
+  transition: background-color .18s ease, border-color .18s ease, color .18s ease, transform .18s ease;
+}
+.check input:checked + .check__box {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--on-primary);
+  transform: scale(1.06);
+}
+.check input:focus-visible + .check__box { outline: 3px solid var(--primary); outline-offset: 2px; }
+.check__text { color: var(--text-muted); transition: color .18s ease; }
+.check input:checked ~ .check__text { color: var(--text); }
+
+/* ---------- 24. КОДЫ ПРИГЛАШЕНИЯ --------------------------------------- */
+.code-box__value {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: clamp(1.7rem, 8vw, 2.5rem);
+  font-weight: 800;
+  letter-spacing: .12em;
+  padding: 16px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-subtle);
+  border: 2px dashed var(--border);
+  animation: codeIn .35s cubic-bezier(.2,.9,.3,1.4);
+  -webkit-user-select: all;
+  user-select: all;                     /* по двойному клику выделяется весь код */
+}
+@keyframes codeIn {
+  from { opacity: 0; transform: scale(.9); }
+  to   { opacity: 1; transform: none; }
+}
+.code-chip {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-weight: 800;
+  letter-spacing: .08em;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: var(--bg-subtle);
+}
+.code-input {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  text-transform: uppercase;
+  letter-spacing: .18em;
+  font-size: 1.25rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .code-box__value { animation: none !important; }
+  .intro { display: none; }
+  .peek__face { transition: none; }
+}

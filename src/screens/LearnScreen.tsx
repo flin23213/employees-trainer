@@ -44,7 +44,7 @@ export default function LearnScreen() {
         <div className="pick" style={{ marginTop: 16 }}>
           <Link to="/cards" className="pick__card pick__card--cards">
             <span className="pick__shine" aria-hidden="true" />
-            <span className="pick__icon" aria-hidden="true">🗂</span>
+            <span className="pick__icon" aria-hidden="true">🃏</span>
             <span className="pick__title">Карточки</span>
             <span className="pick__tag">узнавание · быстро</span>
             <ul className="pick__list">

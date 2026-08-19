@@ -17,12 +17,13 @@ type Props = {
 const SECTIONS = [
   { to: '/',          icon: '🏠', label: 'Главный экран' },
   { to: '/learn',     icon: '🚀', label: 'Начать обучение' },
-  { to: '/cards',     icon: '🗂', label: 'Карточки' },
+  { to: '/cards',     icon: '🃏', label: 'Карточки' },
   { to: '/test',      icon: '✍️', label: 'Тест' },
   { to: '/review',    icon: '🔁', label: 'Повторить ошибки' },
   { to: '/stats',     icon: '📊', label: 'Статистика' },
   { to: '/employees', icon: '👥', label: 'Сотрудники' },
   { to: '/import',    icon: '📂', label: 'Импорт из файла' },
+  { to: '/share',     icon: '🤝', label: 'Обмен списками' },
 ]
 
 export default function AppMenu({ open, onClose, theme, onToggleTheme }: Props) {

@@ -243,7 +243,7 @@ export default function CardsScreen({ mode }: { mode: SessionMode }) {
 
         {!loading && list.length > 0 && (
           <Briefing
-            emoji={mode === 'review' ? '🔁' : mode === 'all' ? '🗂' : '🎯'}
+            emoji={mode === 'review' ? '🔁' : mode === 'all' ? '🃏' : '🎯'}
             title={
               mode === 'review' ? 'Повторение ошибок'
               : mode === 'all' ? 'Все карточки'
