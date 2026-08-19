@@ -2,10 +2,13 @@
 // Экран входа, регистрации и восстановления пароля.
 // Обезьянка: висит на лиане, падает (банан улетает), потом выглядывает
 // из-за поля пароля и реагирует на ввод.
+// Сама обезьянка вынесена в src/components/Monkey.tsx: там анимация,
+// моргание и подгонка кадров друг под друга.
 
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
+import Monkey from '../components/Monkey'
 
 /** Переводим технические сообщения Supabase на понятный русский */
 function translateError(message: string): string {
@@ -71,32 +74,6 @@ function AuthLogo() {
     <div className="auth__logo" aria-hidden="true">
       <span className="auth__logo-face" key={i}>{FACES[i]}</span>
     </div>
-  )
-}
-
-/* ------------------------------------------------------------------ */
-/*  Обезьянка у поля пароля.                                          */
-/*  Две картинки из public/monkey/: peek (смотрит) и hide (закрыла    */
-/*  глаза). Показывается через 1,6 с после загрузки; уезжает вниз     */
-/*  полностью, когда пароль показывают или отправляют форму.          */
-/* ------------------------------------------------------------------ */
-function Monkey({ visible, eyesClosed, onPoke }: {
-  visible: boolean
-  eyesClosed: boolean
-  onPoke: () => void
-}) {
-  // Картинки скачиваем заранее, чтобы подмена кадра не мигала
-  useEffect(() => {
-    ;['peek', 'hide'].forEach((name) => {
-      const img = new Image()
-      img.src = `/monkey/${name}.webp`
-    })
-  }, [])
-
-  return (
-    <span className={'peek' + (visible ? ' is-in' : '')} onClick={onPoke} role="presentation">
-      <img className="peek__img" src={eyesClosed ? '/monkey/hide.webp' : '/monkey/peek.webp'} alt="" />
-    </span>
   )
 }
 

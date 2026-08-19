@@ -6,6 +6,7 @@ import OfflineBanner from './components/OfflineBanner'
 import App from './App'
 import './index.css'
 import './ui.css'          // <-- новый слой оформления, обязательно ПОСЛЕ index.css
+import './ui2.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

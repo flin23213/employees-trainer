@@ -1,10 +1,12 @@
 // Путь: src/components/AppMenu.tsx
-// Выдвижное меню. Плашка «Ваш аккаунт» сверху теперь сама ведёт в профиль,
-// поэтому отдельный пункт «Профиль» внизу больше не нужен.
+// Выдвижное меню. Плашка «Ваш аккаунт» сверху сама ведёт в профиль,
+// а под ней — плашка активного профиля списка: из любого раздела видно,
+// с каким списком вы сейчас работаете, и можно его сменить в один тап.
 
 import { useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../auth/AuthProvider'
+import { useLists } from '../lib/lists'
 
 type Props = {
   open: boolean
@@ -29,6 +31,7 @@ const SECTIONS = [
 
 export default function AppMenu({ open, onClose, theme, onToggleTheme }: Props) {
   const { session, signOut } = useAuth()
+  const { active } = useLists()
   const email = session?.user.email ?? ''
 
   // Пока меню открыто: Esc закрывает, страница под ним не прокручивается.
@@ -81,6 +84,25 @@ export default function AppMenu({ open, onClose, theme, onToggleTheme }: Props) 
             ✕
           </button>
         </div>
+
+        {/* Какой список сотрудников открыт прямо сейчас */}
+        {active && (
+          <NavLink
+            to="/lists"
+            end
+            className={({ isActive }) => 'drawer__list' + (isActive ? ' is-active' : '')}
+            onClick={onClose}
+          >
+            <span className="drawer__list-emoji" aria-hidden="true">{active.emoji}</span>
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span className="drawer__list-label">Активный профиль</span>
+              <span className="drawer__list-name truncate">{active.name}</span>
+            </span>
+            <span className="muted small" style={{ flex: 'none' }}>
+              {active.employee_count} чел. ›
+            </span>
+          </NavLink>
+        )}
 
         <div className="drawer__label">Разделы</div>
         <nav className="drawer__nav">

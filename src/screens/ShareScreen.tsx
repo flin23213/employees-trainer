@@ -1,27 +1,39 @@
 // Путь: src/screens/ShareScreen.tsx
-// Обмен списками: создать код-приглашение или ввести код коллеги.
+// Обмен списками: создать код-приглашение из выбранного профиля
+// или ввести код коллеги.
+//
+// Новое в этой версии:
+//  * перед созданием кода видно и выбирается, КАКИМ профилем делимся;
+//  * в карточке каждого кода написано, из какого он профиля;
+//  * получатель может «заглянуть» в код до применения и видит, в какой
+//    свой профиль попадут люди.
 
-import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
 import { Segmented } from '../components/Briefing'
 import { useEmployees } from '../lib/employees'
+import { useLists } from '../lib/lists'
 import {
   codeState, createShareCode, deleteShareCode, formatCode, listShareCodes,
-  redeemShareCode, revokeShareCode, type RedeemResult, type ShareCode,
+  previewShareCode, redeemShareCode, revokeShareCode,
+  type CodePreview, type RedeemResult, type ShareCode,
 } from '../lib/share'
 
 type Tab = 'give' | 'take'
 
 export default function ShareScreen() {
-  const { list, reload } = useEmployees()
+  const { reload } = useEmployees()
+  const { lists, active, reload: reloadLists } = useLists()
+  const [params] = useSearchParams()
 
   const [tab, setTab] = useState<Tab>('give')
 
   /* --- создание кода --- */
+  const [listId, setListId] = useState<string | null>(null)
   const [days, setDays] = useState<number>(30)
   const [maxUses, setMaxUses] = useState<number>(0)      // 0 = без ограничений
-  const [fresh, setFresh] = useState<string | null>(null)
+  const [fresh, setFresh] = useState<{ code: string; listName: string; count: number } | null>(null)
   const [copied, setCopied] = useState(false)
   const [codes, setCodes] = useState<ShareCode[]>([])
   const [busy, setBusy] = useState(false)
@@ -29,9 +41,27 @@ export default function ShareScreen() {
 
   /* --- активация кода --- */
   const [input, setInput] = useState('')
+  const [checking, setChecking] = useState(false)
+  const [preview, setPreview] = useState<CodePreview | null>(null)
   const [taking, setTaking] = useState(false)
   const [takeError, setTakeError] = useState<string | null>(null)
   const [result, setResult] = useState<RedeemResult | null>(null)
+
+  /* Какой профиль выбран для передачи: из адреса (?list=…), иначе активный */
+  useEffect(() => {
+    if (listId !== null || lists.length === 0) return
+    const wanted = params.get('list')
+    const found = wanted ? lists.find((l) => l.id === wanted) : null
+    setListId((found ?? active ?? lists[0]).id)
+  }, [lists, active, params, listId])
+
+  const chosen = useMemo(() => lists.find((l) => l.id === listId) ?? null, [lists, listId])
+
+  /** Название профиля по его id: для карточек кодов */
+  const nameOf = useCallback(
+    (id: string | null) => (id ? lists.find((l) => l.id === id)?.name ?? null : null),
+    [lists]
+  )
 
   const loadCodes = useCallback(async () => {
     try {
@@ -44,6 +74,7 @@ export default function ShareScreen() {
   useEffect(() => { void loadCodes() }, [loadCodes])
 
   async function handleCreate() {
+    if (!chosen) return
     setBusy(true)
     setError(null)
     setCopied(false)
@@ -51,8 +82,10 @@ export default function ShareScreen() {
       const code = await createShareCode({
         days: days === 0 ? null : days,
         maxUses: maxUses === 0 ? null : maxUses,
+        title: chosen.name,
+        listId: chosen.id,
       })
-      setFresh(code)
+      setFresh({ code, listName: chosen.name, count: chosen.employee_count })
       await loadCodes()
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
@@ -73,12 +106,32 @@ export default function ShareScreen() {
   }
 
   /** Кнопка «Поделиться» телефона: письмо, мессенджер и т.п. */
-  async function share(code: string) {
-    const text = `Мой список сотрудников для тренажёра. Код приглашения: ${formatCode(code)}`
+  async function share(code: string, listName: string) {
+    const text =
+      `Список сотрудников для тренажёра («${listName}»). ` +
+      `Код приглашения: ${formatCode(code)}`
     if (navigator.share) {
       try { await navigator.share({ title: 'Код приглашения', text }) } catch { /* закрыли окно */ }
     } else {
       await copy(code)
+    }
+  }
+
+  /** Заглянуть в код, не применяя его */
+  async function handleCheck() {
+    setChecking(true)
+    setTakeError(null)
+    setResult(null)
+    setPreview(null)
+    try {
+      const p = await previewShareCode(input)
+      setPreview(p)
+      if (!p.found) setTakeError(p.reason ?? 'Код не найден.')
+      else if (p.alive === false) setTakeError(p.reason ?? 'Код больше не действует.')
+    } catch (e) {
+      setTakeError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setChecking(false)
     }
   }
 
@@ -90,7 +143,9 @@ export default function ShareScreen() {
       const res = await redeemShareCode(input)
       setResult(res)
       setInput('')
+      setPreview(null)
       reload()
+      void reloadLists()
     } catch (e) {
       setTakeError(e instanceof Error ? e.message : String(e))
     } finally {
@@ -124,14 +179,51 @@ export default function ShareScreen() {
             <span className="brief__emoji" aria-hidden="true">🤝</span>
             <h2 className="brief__title">Отдать свой список коллеге</h2>
             <p className="brief__what">
-              Создаёте короткий код, коллега вводит его у себя — и ваши {list.length} сотрудников
-              появляются в его аккаунте. Ваш личный прогресс не передаётся: у каждого он свой.
+              Выбираете профиль, получаете короткий код, коллега вводит его у себя — и ваши
+              сотрудники появляются в его аккаунте. Личный прогресс не передаётся: у каждого он свой.
             </p>
           </div>
 
+          {/* ---------- шаг 1: какой профиль отдаём ---------- */}
+          <div className="card" style={{ marginTop: 14 }}>
+            <div className="section" style={{ margin: '0 0 12px' }}>
+              <h3 className="section__title">1. Каким списком делитесь</h3>
+              <p className="section__sub">Код будет содержать людей только из выбранного профиля.</p>
+            </div>
+
+            <div className="pick">
+              {lists.map((l) => (
+                <button
+                  key={l.id}
+                  type="button"
+                  className={'pick__item' + (l.id === listId ? ' is-on' : '')}
+                  disabled={l.employee_count === 0}
+                  onClick={() => { setListId(l.id); setFresh(null) }}
+                >
+                  <span className="pick__emoji" aria-hidden="true">{l.emoji}</span>
+                  <span style={{ flex: 1, minWidth: 0 }}>
+                    <span className="pick__name truncate">{l.name}</span>
+                    <span className="pick__sub">
+                      {l.employee_count === 0 ? 'профиль пустой — делиться нечем' : `${l.employee_count} чел.`}
+                      {l.is_active ? ' · активен' : ''}
+                    </span>
+                  </span>
+                  {l.id === listId && <span className="pick__tick" aria-hidden="true">✓</span>}
+                </button>
+              ))}
+            </div>
+
+            {lists.length === 0 && (
+              <p className="muted small" style={{ marginBottom: 0 }}>
+                Профилей пока нет. Откройте <Link to="/lists">Профили списков</Link>.
+              </p>
+            )}
+          </div>
+
+          {/* ---------- шаг 2: настройки кода ---------- */}
           <div className="card" style={{ marginTop: 14 }}>
             <div className="section" style={{ margin: '0 0 14px' }}>
-              <h3 className="section__title">Настройки кода</h3>
+              <h3 className="section__title">2. Настройки кода</h3>
             </div>
 
             <div className="setting">
@@ -169,13 +261,13 @@ export default function ShareScreen() {
             {error && <div className="card answer-wrong small" style={{ marginBottom: 12 }}>{error}</div>}
 
             <button className="btn btn--primary btn--block btn--lg" onClick={() => void handleCreate()}
-                    disabled={busy || list.length === 0}>
-              {busy ? 'Создаю…' : '🎟 Создать код'}
+                    disabled={busy || !chosen || chosen.employee_count === 0}>
+              {busy ? 'Создаю…' : chosen ? `🎟 Создать код на «${chosen.name}»` : '🎟 Создать код'}
             </button>
 
-            {list.length === 0 && (
+            {chosen && chosen.employee_count === 0 && (
               <p className="muted small center" style={{ marginTop: 10, marginBottom: 0 }}>
-                Список пуст: сначала <Link to="/import">загрузите сотрудников</Link>.
+                В этом профиле никого нет: сначала <Link to="/import">загрузите сотрудников</Link>.
               </p>
             )}
           </div>
@@ -183,13 +275,16 @@ export default function ShareScreen() {
           {/* Свежий код крупно */}
           {fresh && (
             <div className="card card--pad-lg center code-box" style={{ marginTop: 14 }}>
-              <p className="muted small" style={{ marginBottom: 6 }}>Код готов, передайте его коллеге</p>
-              <div className="code-box__value">{formatCode(fresh)}</div>
+              <p className="muted small" style={{ marginBottom: 6 }}>
+                Код на профиль «{fresh.listName}» · {fresh.count} чел.
+              </p>
+              <div className="code-box__value">{formatCode(fresh.code)}</div>
               <div className="grid grid-2" style={{ marginTop: 16 }}>
-                <button className="btn btn--block" onClick={() => void copy(fresh)}>
+                <button className="btn btn--block" onClick={() => void copy(fresh.code)}>
                   {copied ? '✅ Скопировано' : '📋 Скопировать'}
                 </button>
-                <button className="btn btn--primary btn--block" onClick={() => void share(fresh)}>
+                <button className="btn btn--primary btn--block"
+                        onClick={() => void share(fresh.code, fresh.listName)}>
                   📨 Отправить
                 </button>
               </div>
@@ -204,10 +299,12 @@ export default function ShareScreen() {
             <>
               <div className="section">
                 <h3 className="section__title">Мои коды · {codes.length}</h3>
+                <p className="section__sub">Видно, из какого профиля каждый код.</p>
               </div>
               <div className="stack" style={{ gap: 8 }}>
                 {codes.map((c) => {
                   const st = codeState(c)
+                  const listName = nameOf(c.list_id) ?? c.title
                   return (
                     <div key={c.code} className="card" style={{ opacity: st.alive ? 1 : .6 }}>
                       <div className="row">
@@ -218,7 +315,7 @@ export default function ShareScreen() {
                         </span>
                       </div>
                       <p className="muted small" style={{ margin: '8px 0 10px' }}>
-                        {c.employee_count} чел. в списке · использован {c.uses}
+                        Профиль: {listName ?? 'удалён'} · {c.employee_count} чел. · использован {c.uses}
                         {c.max_uses === null ? ' раз' : ` из ${c.max_uses}`}
                       </p>
                       <div className="row" style={{ gap: 8 }}>
@@ -250,10 +347,23 @@ export default function ShareScreen() {
             <span className="brief__emoji" aria-hidden="true">🎟</span>
             <h2 className="brief__title">Получить готовый список</h2>
             <p className="brief__what">
-              Введите код, который дал коллега. Сотрудники добавятся к вашему списку;
-              те, кто у вас уже есть, повторно не появятся.
+              Введите код, который дал коллега. Сотрудники добавятся в ваш активный профиль;
+              те, кто там уже есть, повторно не появятся.
             </p>
           </div>
+
+          {active && (
+            <div className="card" style={{ marginTop: 14 }}>
+              <div className="row">
+                <span style={{ fontSize: '1.4rem' }} aria-hidden="true">{active.emoji}</span>
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span className="muted small" style={{ display: 'block' }}>Люди попадут в профиль</span>
+                  <strong className="truncate" style={{ display: 'block' }}>{active.name}</strong>
+                </span>
+                <Link to="/lists" className="btn btn--sm">Сменить</Link>
+              </div>
+            </div>
+          )}
 
           <div className="card" style={{ marginTop: 14 }}>
             <label className="label" htmlFor="code">Код приглашения</label>
@@ -261,7 +371,7 @@ export default function ShareScreen() {
               id="code"
               className="input code-input"
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => { setInput(e.target.value); setPreview(null); setTakeError(null) }}
               placeholder="ABCD-1234"
               autoCapitalize="characters"
               autoComplete="off"
@@ -271,11 +381,27 @@ export default function ShareScreen() {
 
             {takeError && <div className="card answer-wrong small shake" style={{ margin: '12px 0' }}>{takeError}</div>}
 
-            <button className="btn btn--primary btn--block btn--lg" style={{ marginTop: 12 }}
-                    onClick={() => void handleRedeem()}
-                    disabled={taking || input.trim().length < 4}>
-              {taking ? 'Проверяю…' : '✅ Применить код'}
-            </button>
+            {/* Что внутри кода */}
+            {preview?.found && preview.alive && (
+              <div className="card answer-correct small" style={{ margin: '12px 0' }}>
+                Код рабочий: профиль «{preview.list_name ?? preview.title ?? 'без названия'}»,
+                {' '}{preview.employee_count} чел.
+                {preview.is_mine && ' Это ваш собственный код.'}
+              </div>
+            )}
+
+            <div className="grid grid-2" style={{ marginTop: 12 }}>
+              <button className="btn btn--block"
+                      onClick={() => void handleCheck()}
+                      disabled={checking || input.trim().length < 4}>
+                {checking ? 'Смотрю…' : '🔍 Проверить'}
+              </button>
+              <button className="btn btn--primary btn--block"
+                      onClick={() => void handleRedeem()}
+                      disabled={taking || input.trim().length < 4}>
+                {taking ? 'Добавляю…' : '✅ Применить'}
+              </button>
+            </div>
           </div>
 
           {result && (
@@ -285,6 +411,7 @@ export default function ShareScreen() {
                 {result.added > 0 ? `Добавлено ${result.added} чел.` : 'Новых сотрудников нет'}
               </h3>
               <p className="muted small">
+                {result.list_name && <>Профиль «{result.list_name}». </>}
                 В списке по коду было {result.total_in_code} чел.
                 {result.skipped > 0 && ` Пропущено ${result.skipped}: они у вас уже есть.`}
               </p>

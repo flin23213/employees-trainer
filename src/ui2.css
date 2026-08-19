@@ -1,0 +1,301 @@
+/* ==========================================================================
+   Путь: src/ui2.css
+   Третий слой оформления. Подключается в main.tsx ПОСЛЕ ui.css, поэтому
+   всё, что здесь написано, перебивает предыдущие правила.
+   Содержание:
+     1. Обезьянка у поля пароля (новая, с анимацией)
+     2. Инструкция на главном экране
+     3. Профили списков: понятный выбор
+     4. Плашка профиля в меню
+     5. Выбор профиля перед созданием кода
+   ========================================================================== */
+
+
+/* ---------- 1. ОБЕЗЬЯНКА У ПОЛЯ ПАРОЛЯ ----------------------------------- */
+/*  НАСТРОЙКА ПОЛОЖЕНИЯ. Меняйте только эти пять переменных:
+      --mk-w        ширина картинки
+      --mk-sink     насколько низ уходит ПОД поле (больше = глубже сидит)
+      --mk-shift-y  сдвиг всей фигуры: отрицательное = выше, положительное = ниже
+      --mk-right    отступ от правого края поля
+      --mk-nudge-y  подгонка ВТОРОГО кадра под первый, если он смещён
+                    (плюс = опустить второй кадр, минус = поднять)
+      --mk-nudge-x  то же самое по горизонтали
+      --mk-shut-scale  если второй кадр немного крупнее/мельче первого        */
+
+.pw { position: relative; }
+.pw__input { position: relative; z-index: 2; }   /* поле всегда поверх неё */
+
+.mk {
+  --mk-w: clamp(88px, 20vw, 116px);
+  --mk-sink: 14px;
+  --mk-shift-y: 0px;
+  --mk-right: 4px;
+  --mk-nudge-x: 0px;
+  --mk-nudge-y: 0px;
+  --mk-shut-scale: 1;
+
+  position: absolute;
+  right: var(--mk-right);
+  bottom: calc(100% - var(--mk-sink));
+  width: calc(var(--mk-w) + 20px);   /* +20px — воздух для покачивания */
+  padding: 0 10px;
+  box-sizing: border-box;
+  z-index: 1;
+  display: block;
+  line-height: 0;
+  cursor: pointer;
+  overflow: hidden;                  /* всё, что ниже рамки, обрезается */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Выезд из-за поля. Пружинка мягкая: чуть перелетает и возвращается. */
+.mk__slide {
+  display: block;
+  transform: translate3d(0, 115%, 0);
+  transition: transform .62s cubic-bezier(.22, 1.3, .36, 1);
+  will-change: transform;
+}
+.mk.is-in .mk__slide { transform: translate3d(0, var(--mk-shift-y), 0); }
+
+/* Дыхание в покое: отдельный слой, чтобы не мешать выезду */
+.mk__idle {
+  display: block;
+  position: relative;
+  transform-origin: 50% 100%;
+  animation: mkIdle 5.2s ease-in-out infinite;
+}
+@keyframes mkIdle {
+  0%,  100% { transform: translateY(0)     rotate(0deg)    scale(1);       }
+  25%       { transform: translateY(-2.5px) rotate(-1.1deg) scale(1.008);  }
+  50%       { transform: translateY(0)      rotate(0deg)    scale(1);      }
+  75%       { transform: translateY(-1.5px) rotate(1.1deg)  scale(1.004);  }
+}
+
+/* Прячет глаза — чуть пригибается, как будто и правда стесняется */
+.mk.is-shy .mk__idle { animation-play-state: paused; }
+.mk.is-shy .mk__slide { transform: translate3d(0, calc(var(--mk-shift-y) + 5px), 0); }
+
+/* Ткнули мышкой — выглядывает выше */
+@media (hover: hover) {
+  .mk:hover .mk__slide { transform: translate3d(0, calc(var(--mk-shift-y) - 7px), 0); }
+}
+
+/* Кадры. Первый задаёт высоту рамки, второй ложится ровно поверх него. */
+.mk__frame {
+  display: block;
+  width: 100%;
+  height: auto;
+  -webkit-user-select: none;
+  user-select: none;
+  pointer-events: none;
+}
+.mk__frame--shut {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;    /* низ к низу: кадры не расходятся */
+  transform: translate(var(--mk-nudge-x), var(--mk-nudge-y)) scale(var(--mk-shut-scale));
+  transform-origin: center bottom;
+  opacity: 0;
+  transition: opacity .16s ease-out;
+}
+.mk__frame--shut.is-on { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mk__slide { transition: none; }
+  .mk__idle  { animation: none; }
+}
+
+
+/* ---------- 2. ИНСТРУКЦИЯ НА ГЛАВНОМ ЭКРАНЕ ------------------------------ */
+.guide {
+  border: 1px solid var(--primary);
+  background: linear-gradient(150deg, var(--primary-soft) 0%, var(--bg-elevated) 65%);
+}
+.guide__top { display: flex; align-items: flex-start; gap: 12px; }
+.guide__emoji { font-size: 1.7rem; line-height: 1; flex: none; }
+.guide__title { margin: 0; font-size: 1.05rem; }
+.guide__sub { margin: 4px 0 0; }
+.guide__close {
+  flex: none;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 8px;
+}
+@media (hover: hover) { .guide__close:hover { color: var(--text); } }
+
+.guide__steps { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 10px; }
+.guide__step {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+}
+.guide__step.is-done { opacity: .6; }
+.guide__num {
+  flex: none;
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: .82rem; font-weight: 800;
+  background: var(--primary); color: #fff;
+}
+.guide__step.is-done .guide__num { background: var(--success); }
+.guide__step-title { font-weight: 700; display: block; }
+.guide__step-text  { display: block; font-size: .86rem; color: var(--text-muted); margin-top: 2px; }
+.guide__step-link  { display: inline-block; margin-top: 6px; font-size: .86rem; font-weight: 700; }
+
+
+/* ---------- 3. ПРОФИЛИ СПИСКОВ: ПОНЯТНЫЙ ВЫБОР --------------------------- */
+/* Крупная плашка «сейчас занимаетесь этим списком» */
+.lnow {
+  display: grid;
+  gap: 12px;
+  border: 2px solid var(--primary);
+  background: linear-gradient(140deg, var(--primary-soft) 0%, var(--bg-elevated) 60%);
+}
+.lnow__row { display: flex; align-items: center; gap: 14px; }
+.lnow__emoji {
+  font-size: 2rem; flex: none;
+  width: 54px; height: 54px;
+  display: grid; place-items: center;
+  border-radius: 16px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+}
+.lnow__label { font-size: .74rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--primary); }
+.lnow__name { font-size: 1.15rem; font-weight: 800; display: block; }
+
+/* Карточка профиля в списке */
+.lcard { padding: 0; overflow: hidden; }
+.lcard__pick {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 14px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color .15s ease;
+}
+.lcard__pick:disabled { cursor: default; }
+@media (hover: hover) {
+  .lcard__pick:not(:disabled):hover { background: var(--bg-subtle); }
+}
+.lcard.is-active { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+
+/* Кружок-переключатель, как в списке настроек */
+.lcard__radio {
+  flex: none;
+  width: 22px; height: 22px;
+  margin-top: 2px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  display: grid; place-items: center;
+  transition: border-color .15s ease, background-color .15s ease;
+}
+.lcard__radio::after {
+  content: '';
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: #fff;
+  transform: scale(0);
+  transition: transform .18s cubic-bezier(.2, 1.4, .4, 1);
+}
+.lcard.is-active .lcard__radio { border-color: var(--primary); background: var(--primary); }
+.lcard.is-active .lcard__radio::after { transform: scale(1); }
+
+.lcard__emoji { font-size: 1.5rem; flex: none; line-height: 1.2; }
+.lcard__name { font-weight: 700; }
+.lcard__meta { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 6px; font-size: .8rem; color: var(--text-muted); }
+.lcard__bar { margin-top: 8px; }
+.lcard__acts {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  padding: 12px 14px;
+  border-top: 1px dashed var(--border);
+  background: var(--bg-subtle);
+}
+.lcard__more {
+  width: 100%;
+  border: 0; border-top: 1px dashed var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit; font-size: .84rem; font-weight: 700;
+  padding: 9px;
+  cursor: pointer;
+}
+@media (hover: hover) { .lcard__more:hover { color: var(--text); background: var(--bg-subtle); } }
+
+/* Полоска прогресса внутри кнопки: span вместо div, поэтому включаем блок */
+span.progress { display: block; }
+span.progress__bar { display: block; }
+
+/* Короткая подсказка «переключились» */
+.lflash { animation: lflash .5s ease-out; }
+@keyframes lflash {
+  from { transform: scale(.985); opacity: .5; }
+  to   { transform: none;        opacity: 1;  }
+}
+
+
+/* ---------- 4. ПЛАШКА ПРОФИЛЯ В МЕНЮ ------------------------------------- */
+.drawer__list {
+  display: flex; align-items: center; gap: 10px;
+  margin: 4px 0 14px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-subtle);
+  color: var(--text);
+  text-decoration: none;
+}
+.drawer__list.is-active { border-color: var(--primary); }
+.drawer__list-emoji { font-size: 1.3rem; flex: none; }
+.drawer__list-label { display: block; font-size: .72rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--text-muted); }
+.drawer__list-name { display: block; font-weight: 700; }
+
+
+/* ---------- 5. ВЫБОР ПРОФИЛЯ ПЕРЕД СОЗДАНИЕМ КОДА ------------------------ */
+.pick { display: grid; gap: 8px; }
+.pick__item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 12px;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .15s ease, background-color .15s ease;
+}
+.pick__item.is-on { border-color: var(--primary); background: var(--primary-soft); }
+.pick__item:disabled { opacity: .5; cursor: not-allowed; }
+.pick__emoji { font-size: 1.3rem; flex: none; }
+.pick__name { font-weight: 700; display: block; }
+.pick__sub { display: block; font-size: .8rem; color: var(--text-muted); }
+.pick__tick { flex: none; color: var(--primary); font-weight: 800; }
+
+
+/* ---------- 6. МЕЛКИЕ ИСПРАВЛЕНИЯ ---------------------------------------- */
+/* Пока открыто меню, страница под ним не должна прокручиваться.
+   Класс в коде уже добавлялся, а правила для него не было. */
+.no-scroll { overflow: hidden; }
+
+/* Жёлтый значок «в процессе»: в коде он назывался badge--learning,
+   а в оформлении был только badge--learn. Теперь работают оба имени. */
+.badge--learning { background: var(--warning-soft); color: var(--warning); }
