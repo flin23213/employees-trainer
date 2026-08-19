@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Нет соединения — Тренажёр сотрудников</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f5f6f8;
+        color: #14161a;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+        text-align: center;
+        padding: 24px;
+      }
+      .box { max-width: 340px; }
+      .emoji { font-size: 56px; }
+      h1 { font-size: 1.3rem; margin: 12px 0 8px; }
+      p { color: #6b7280; line-height: 1.5; margin: 0 0 20px; }
+      button {
+        min-height: 48px;
+        padding: 12px 24px;
+        border: 0;
+        border-radius: 10px;
+        background: #4f46e5;
+        color: #fff;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      @media (prefers-color-scheme: dark) {
+        body { background: #0f1115; color: #f2f4f7; }
+        p { color: #9aa2af; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="box">
+      <div class="emoji">📡</div>
+      <h1>Нет соединения</h1>
+      <p>
+        Приложение не смогло связаться с сервером. Проверьте интернет и попробуйте снова.
+        Ваши данные в безопасности, они хранятся на сервере.
+      </p>
+      <button onclick="location.reload()">Попробовать снова</button>
+    </div>
+  </body>
+</html>
