@@ -5,6 +5,7 @@ import { AuthProvider } from './auth/AuthProvider'
 import OfflineBanner from './components/OfflineBanner'
 import App from './App'
 import './index.css'
+import './ui.css'          // <-- новый слой оформления, обязательно ПОСЛЕ index.css
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

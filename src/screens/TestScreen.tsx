@@ -1,17 +1,43 @@
 // Путь: src/screens/TestScreen.tsx
+// Тест: брифинг с настройками → вопросы → разбор → итоги.
+
 import { useEffect, useState } from 'react'
+import type { CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
+import Briefing, { Segmented } from '../components/Briefing'
 import { recordAnswer, useEmployees } from '../lib/employees'
+import { logAnswer } from '../lib/activity'
 import { buildQuiz, type Question, type QuizMode } from '../lib/quiz'
 import { checkAnswer, type CheckResult } from '../lib/answerCheck'
+import type { EmployeeWithProgress } from '../types'
 
-type Phase = 'setup' | 'answering' | 'feedback' | 'done'
+type Phase = 'brief' | 'answering' | 'feedback' | 'done'
+type Pool = 'all' | 'weak'
+type Settings = { size: number; mode: QuizMode; pool: Pool }
+
+const DEFAULTS: Settings = { size: 10, mode: 'mixed', pool: 'all' }
+
+function loadSettings(): Settings {
+  try {
+    const raw = localStorage.getItem('test-settings')
+    if (!raw) return DEFAULTS
+    return { ...DEFAULTS, ...(JSON.parse(raw) as Partial<Settings>) }
+  } catch {
+    return DEFAULTS
+  }
+}
+
+/** Кого считаем слабым местом */
+function isWeak(e: EmployeeWithProgress): boolean {
+  return e.status === 'new' || e.status === 'weak' || e.accuracy < 60 || e.last_result === false
+}
 
 export default function TestScreen() {
   const { list, loading, error, reload } = useEmployees()
 
-  const [phase, setPhase] = useState<Phase>('setup')
+  const [settings, setSettings] = useState<Settings>(() => loadSettings())
+  const [phase, setPhase] = useState<Phase>('brief')
   const [questions, setQuestions] = useState<Question[]>([])
   const [index, setIndex] = useState(0)
   const [input, setInput] = useState('')
@@ -23,8 +49,25 @@ export default function TestScreen() {
   const current = questions[index]
   const total = questions.length
 
-  function start(mode: QuizMode) {
-    const q = buildQuiz(list, mode, 10)
+  useEffect(() => {
+    localStorage.setItem('test-settings', JSON.stringify(settings))
+  }, [settings])
+
+  /** Список, из которого берём вопросы (с защитой: слишком узкий пул не годится) */
+  function pickPool(st: Settings): EmployeeWithProgress[] {
+    if (st.pool === 'all') return list
+    const weak = list.filter(isWeak)
+    return weak.length >= 4 ? weak : list
+  }
+
+  function makeQuestions(st: Settings): Question[] {
+    const pool = pickPool(st)
+    const size = st.size === 0 ? pool.length : st.size
+    return buildQuiz(pool, st.mode, size)
+  }
+
+  function start() {
+    const q = makeQuestions(settings)
     setQuestions(q)
     setIndex(0)
     setInput('')
@@ -51,6 +94,8 @@ export default function TestScreen() {
   async function commit(question: Question, isCorrect: boolean) {
     if (isCorrect) setCorrectCount((n) => n + 1)
     else setWrongList((prev) => (prev.includes(question) ? prev : [...prev, question]))
+
+    logAnswer(isCorrect)   // отмечаем ответ в дневнике занятий (для графика по дням)
     try {
       await recordAnswer(question.employee.id, isCorrect)
     } catch {
@@ -65,15 +110,14 @@ export default function TestScreen() {
     setResult(checked)
     setPhase('feedback')
 
-    // «Почти» не записываем сразу: сначала решение пользователя
-    if (checked.verdict === 'correct') commit(current, true)
-    else if (checked.verdict === 'wrong') commit(current, false)
+    if (checked.verdict === 'correct') void commit(current, true)
+    else if (checked.verdict === 'wrong') void commit(current, false)
   }
 
   /** Решение пользователя по вердикту «почти правильно» */
   function resolveAlmost(asCorrect: boolean) {
     if (!current) return
-    commit(current, asCorrect)
+    void commit(current, asCorrect)
     setResult({ verdict: asCorrect ? 'correct' : 'wrong', hint: result.hint })
   }
 
@@ -95,41 +139,101 @@ export default function TestScreen() {
     return () => window.removeEventListener('keydown', onKey)
   })
 
-  /* ---------------------------- ВЫБОР РЕЖИМА --------------------------- */
-  if (phase === 'setup') {
+  /* ============================ БРИФИНГ =========================== */
+  if (phase === 'brief') {
+    const preview = loading ? [] : makeQuestions(settings)
+    const weakCount = list.filter(isWeak).length
+
     return (
-      <div className="container fade-in">
+      <div className="container">
         <AppHeader title="Тест" back />
-        {loading && <div className="card center muted">Загружаю...</div>}
+
+        {loading && <div className="card center muted">Загружаю…</div>}
         {error && <div className="card answer-wrong">Ошибка: {error}</div>}
 
         {!loading && list.length === 0 && (
-          <div className="card center">
-            <p style={{ fontSize: 40, margin: 0 }}>📭</p>
+          <div className="card card--pad-lg center">
+            <p className="big-emoji">📭</p>
             <p><strong>Сначала добавьте сотрудников</strong></p>
-            <Link to="/employees" className="btn btn--primary">К сотрудникам</Link>
+            <p className="muted small">Тест собирается из вашего списка, поэтому без него вопросов не будет.</p>
+            <div className="stack">
+              <Link to="/import" className="btn btn--primary">📂 Загрузить из файла</Link>
+              <Link to="/employees" className="btn">👥 Добавить вручную</Link>
+            </div>
           </div>
         )}
 
         {!loading && list.length > 0 && (
-          <div className="stack">
-            <p className="muted small">10 вопросов. Первыми пойдут те, кого вы знаете хуже.</p>
+          <Briefing
+            emoji="✍️"
+            title="Проверка знаний"
+            what="Здесь вы вспоминаете сами, без подсказок. Это в разы полезнее карточек: мозг достаёт ответ из памяти, а не просто соглашается с ним."
+            steps={[
+              'Вопросы бывают двух видов: вписать ответ своими словами или выбрать один из четырёх вариантов.',
+              'Опечатки прощаются: «Федорова» вместо «Фёдорова» пройдёт. Спорные случаи я помечу как «почти правильно», и вы сами решите, зачесть ли.',
+              'Не помните — жмите «Не помню». Это не стыдно, зато человек вернётся в повторение.',
+              'После каждого ответа показываю правильный вариант и краткую справку о сотруднике.',
+            ]}
+            settings={
+              <>
+                <div className="setting">
+                  <div className="setting__title">Сколько вопросов</div>
+                  <p className="setting__hint">10 вопросов — это примерно 3-4 минуты.</p>
+                  <Segmented
+                    value={settings.size}
+                    options={[
+                      { value: 5, label: '5' },
+                      { value: 10, label: '10' },
+                      { value: 20, label: '20' },
+                      { value: 0, label: 'Макс.' },
+                    ]}
+                    onChange={(size) => setSettings({ ...settings, size })}
+                  />
+                </div>
 
-            <button className="card card--clickable" onClick={() => start('mixed')} style={{ textAlign: 'left' }}>
-              <strong>🎲 Все типы вопросов</strong>
-              <div className="muted small">И ввод текста, и выбор из вариантов. Рекомендую</div>
-            </button>
+                <div className="setting">
+                  <div className="setting__title">Тип вопросов</div>
+                  <p className="setting__hint">
+                    Выбор из вариантов — проще, ввод текста — сложнее и полезнее. «Всё вперемешку» рекомендую.
+                  </p>
+                  <Segmented
+                    value={settings.mode}
+                    options={[
+                      { value: 'mixed' as QuizMode, label: 'Вперемешку' },
+                      { value: 'choice' as QuizMode, label: 'Выбор' },
+                      { value: 'input' as QuizMode, label: 'Ввод' },
+                    ]}
+                    onChange={(mode) => setSettings({ ...settings, mode })}
+                  />
+                </div>
 
-            <button className="card card--clickable" onClick={() => start('choice')} style={{ textAlign: 'left' }}>
-              <strong>👉 Только выбор из 4 вариантов</strong>
-              <div className="muted small">Проще: для первого знакомства</div>
-            </button>
-
-            <button className="card card--clickable" onClick={() => start('input')} style={{ textAlign: 'left' }}>
-              <strong>⌨️ Только ввод текста</strong>
-              <div className="muted small">Сложнее и полезнее: вспоминаете сами</div>
-            </button>
-          </div>
+                <div className="setting">
+                  <div className="setting__title">Кого спрашивать</div>
+                  <p className="setting__hint">
+                    {weakCount >= 4
+                      ? `Слабых мест сейчас ${weakCount}. Можно погонять только их.`
+                      : 'Слабых мест пока меньше четырёх, поэтому режим «слабые» автоматически расширится до всего списка.'}
+                  </p>
+                  <Segmented
+                    value={settings.pool}
+                    options={[
+                      { value: 'all' as Pool, label: 'Всех' },
+                      { value: 'weak' as Pool, label: 'Слабые места' },
+                    ]}
+                    onChange={(pool) => setSettings({ ...settings, pool })}
+                  />
+                </div>
+              </>
+            }
+            summary={
+              preview.length === 0
+                ? 'По этим настройкам вопросы не собрались. Для режима «Выбор» нужно минимум 4 человека с разными должностями.'
+                : `Готово ${preview.length} ${preview.length === 1 ? 'вопрос' : preview.length < 5 ? 'вопроса' : 'вопросов'}`
+            }
+            startLabel={preview.length === 0 ? 'Вопросы не собрались' : '▶ Начать тест'}
+            disabled={preview.length === 0}
+            onStart={start}
+          />
         )}
       </div>
     )
@@ -149,12 +253,23 @@ export default function TestScreen() {
               Для выбора из четырёх вариантов нужно минимум 4 сотрудника с разными должностями.
               Добавьте людей или выберите режим «только ввод текста».
             </p>
-            <button className="btn btn--primary" onClick={() => setPhase('setup')}>Назад к выбору</button>
+            <button className="btn btn--primary" onClick={() => setPhase('brief')}>Назад к настройкам</button>
           </div>
         ) : (
-          <div className="card card--pad-lg center">
-            <p style={{ fontSize: 44, margin: 0 }}>{percent >= 80 ? '🏆' : percent >= 50 ? '👍' : '💪'}</p>
-            <h2>{correctCount} из {total}</h2>
+          <div className="card card--pad-lg center celebrate">
+            {percent >= 70 && Array.from({ length: 12 }).map((_, i) => (
+              <span
+                key={i}
+                className="confetti"
+                style={{ '--dx': `${(i - 6) * 26}px`, animationDelay: `${i * 0.05}s` } as CSSProperties}
+                aria-hidden="true"
+              >
+                {['🎉', '✨', '⭐', '🎊'][i % 4]}
+              </span>
+            ))}
+
+            <p className="big-emoji">{percent >= 80 ? '🏆' : percent >= 50 ? '👍' : '💪'}</p>
+            <h2 style={{ margin: '4px 0' }}>{correctCount} из {total}</h2>
             <p className="muted">Правильных ответов: {percent}%</p>
             <div className="progress" style={{ marginBottom: 16 }}>
               <div className={`progress__bar${percent >= 80 ? ' progress__bar--success' : ''}`} style={{ width: `${percent}%` }} />
@@ -172,9 +287,10 @@ export default function TestScreen() {
             )}
 
             <div className="stack">
-              <button className="btn btn--primary btn--lg" onClick={() => setPhase('setup')}>Пройти ещё раз</button>
+              <button className="btn btn--primary btn--lg" onClick={() => setPhase('brief')}>↻ Пройти ещё раз</button>
               {wrongList.length > 0 && <Link to="/review" className="btn">🔁 Повторить ошибки карточками</Link>}
-              <Link to="/" className="btn btn--ghost">На главную</Link>
+              <Link to="/insight/weak" className="btn btn--ghost">⚠️ Мои слабые места</Link>
+              <Link to="/" className="btn btn--ghost">🏠 На главную</Link>
             </div>
           </div>
         )}
@@ -199,7 +315,7 @@ export default function TestScreen() {
         <div className="progress__bar" style={{ width: `${percent}%` }} />
       </div>
 
-      <div className="card card--pad-lg">
+      <div className="card card--pad-lg" key={index}>
         <div className="quiz-prompt">
           <div className="quiz-prompt__label">{current.promptLabel}</div>
           <div className="quiz-prompt__value">{current.promptValue}</div>

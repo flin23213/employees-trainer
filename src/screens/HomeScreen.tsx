@@ -1,79 +1,210 @@
 // Путь: src/screens/HomeScreen.tsx
+// Главный экран = короткий пульт: как дела, одна кнопка «начать», показатели.
+// Всё длинное объяснение убрано в сворачивающийся блок внизу.
+
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
+import StatTile from '../components/StatTile'
+import ProgressScale from '../components/ProgressScale'
+import ActivityChart from '../components/ActivityChart'
 import { computeStats, useEmployees } from '../lib/employees'
 
+/* ------------------------------------------------------------------ */
+/*  «Живой» смайлик: лица меняются сами                               */
+/* ------------------------------------------------------------------ */
+const FACES = ['🧑‍💼', '👩‍💻', '👨‍🔧', '👩‍🏫', '🧑‍🚀', '👨‍🍳', '👩‍⚕️', '🧑‍🎨', '👨‍✈️', '👩‍🔬']
+
+function LiveAvatar({ small = false }: { small?: boolean }) {
+  const [i, setI] = useState(0)
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setI((n) => (n + 1) % FACES.length), 2600)
+    return () => window.clearInterval(timer)
+  }, [])
+
+  return (
+    <div className={'avatar-bubble' + (small ? ' avatar-bubble--sm' : '')} aria-hidden="true">
+      <span className="avatar-bubble__face" key={i}>{FACES[i]}</span>
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/*  Определяем, широкий ли экран (компьютер) или узкий (телефон)       */
+/* ------------------------------------------------------------------ */
+function useIsWide(): boolean {
+  const query = '(min-width: 760px)'
+  const [wide, setWide] = useState(() => window.matchMedia(query).matches)
+
+  useEffect(() => {
+    const mql = window.matchMedia(query)
+    const onChange = () => setWide(mql.matches)
+    mql.addEventListener('change', onChange)
+    return () => mql.removeEventListener('change', onChange)
+  }, [])
+
+  return wide
+}
+
+function greeting(): string {
+  const h = new Date().getHours()
+  if (h < 5) return 'Доброй ночи'
+  if (h < 12) return 'Доброе утро'
+  if (h < 18) return 'Добрый день'
+  return 'Добрый вечер'
+}
+
+/* ------------------------------------------------------------------ */
+/*  Сворачивающийся блок «Как это работает»                            */
+/* ------------------------------------------------------------------ */
+function HowItWorks() {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <div className="card fold">
+      <button className="fold__head" onClick={() => setOpen(!open)} aria-expanded={open}>
+        <span className="fold__icon" aria-hidden="true">💡</span>
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <span className="fold__title">Как это работает</span>
+          <span className="fold__sub">Коротко: зачем карточки, зачем тест и откуда берётся процент</span>
+        </span>
+        <span className={'fold__chev' + (open ? ' is-open' : '')} aria-hidden="true">⌄</span>
+      </button>
+
+      {open && (
+        <div className="fold__body">
+          <ol className="steps">
+            <li>
+              <span className="steps__num">1</span>
+              <span><strong>Карточки</strong> — узнавание. Видите ФИО, вспоминаете должность, честно отмечаете «знаю» или «не знаю». Быстро, годится в перерыве.</span>
+            </li>
+            <li>
+              <span className="steps__num">2</span>
+              <span><strong>Тест</strong> — припоминание. Ответ нужно вписать или выбрать. Сложнее, но именно так знания закрепляются надолго.</span>
+            </li>
+            <li>
+              <span className="steps__num">3</span>
+              <span><strong>Тренажёр сам решает, кого показать.</strong> Кого путаете — показывает чаще, кого знаете — реже. Поэтому достаточно нажимать «Начать обучение».</span>
+            </li>
+            <li>
+              <span className="steps__num">4</span>
+              <span><strong>«Выучен»</strong> — это несколько верных ответов подряд, а не один удачный. Поэтому процент растёт не сразу, зато честно.</span>
+            </li>
+          </ol>
+          <p className="muted small" style={{ margin: '12px 0 0' }}>
+            Все разделы всегда доступны через кнопку ☰ в правом верхнем углу.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/*  Экран                                                             */
+/* ------------------------------------------------------------------ */
 export default function HomeScreen() {
   const { list, loading, error } = useEmployees()
   const s = computeStats(list)
+  const wide = useIsWide()
+  const empty = !loading && s.total === 0
 
   return (
-    <div className="container fade-in">
-      <AppHeader title="Тренажёр сотрудников" showSignOut />
+    <div className="container">
+      <AppHeader title="Тренажёр сотрудников" />
 
       {error && <div className="card answer-wrong" style={{ marginBottom: 16 }}>Ошибка загрузки: {error}</div>}
 
-      {/* Плитки статистики: на телефоне 1-2 в ряд, на ПК 4 */}
-      <div className="grid grid-4" style={{ marginBottom: 16 }}>
-        <div className="card stat">
-          <div className="stat__value">{loading ? '…' : s.total}</div>
-          <div className="stat__label">Сотрудников</div>
+      <div className="stagger">
+        {/* ---------- 1. Приветствие ---------- */}
+        <div className="hero">
+          <div className="hero__row">
+            <LiveAvatar small={wide} />
+            <div className="hero__texts">
+              <div className="hero__hi">{greeting()}!</div>
+              <h2 className="hero__title">
+                {empty ? 'Начнём с самого начала' : `Вы знаете ${s.known} из ${s.total}`}
+              </h2>
+              <p className="hero__note">
+                {empty
+                  ? 'В базе пока никого нет. Добавьте сотрудников — и тренажёр оживёт.'
+                  : loading
+                    ? 'Обновляю данные…'
+                    : s.weak > 0
+                      ? `Точность ${s.avgAccuracy}% · есть ${s.weak} слабых мест`
+                      : `Точность ${s.avgAccuracy}% · слабых мест нет`}
+              </p>
+            </div>
+          </div>
         </div>
-        <div className="card stat">
-          <div className="stat__value" style={{ color: 'var(--success)' }}>{loading ? '…' : s.known}</div>
-          <div className="stat__label">Изучено</div>
-        </div>
-        <div className="card stat">
-          <div className="stat__value" style={{ color: 'var(--danger)' }}>{loading ? '…' : s.weak}</div>
-          <div className="stat__label">Слабые места</div>
-        </div>
-        <div className="card stat">
-          <div className="stat__value">{loading ? '…' : `${s.avgAccuracy}%`}</div>
-          <div className="stat__label">Средняя точность</div>
-        </div>
+
+        {/* ---------- 2. Пустая база ---------- */}
+        {empty && (
+          <div className="card" style={{ marginTop: 16 }}>
+            <h3 className="section__title" style={{ marginBottom: 12 }}>С чего начать</h3>
+            <ol className="steps" style={{ marginBottom: 16 }}>
+              <li><span className="steps__num">1</span><span>Загрузите готовый список из Excel, CSV или обычного текста — так быстрее всего.</span></li>
+              <li><span className="steps__num">2</span><span>Или добавьте пару человек вручную, чтобы просто попробовать.</span></li>
+              <li><span className="steps__num">3</span><span>Возвращайтесь сюда: появятся тренировки и статистика.</span></li>
+            </ol>
+            <div className="stack">
+              <Link to="/import" className="btn btn--primary btn--block btn--lg">📂 Загрузить список из файла</Link>
+              <Link to="/employees" className="btn btn--block">✍️ Добавить вручную</Link>
+            </div>
+          </div>
+        )}
+
+        {!empty && (
+          <>
+            {/* ---------- 3. Главная кнопка ---------- */}
+            <Link to="/learn" className="start-btn" style={{ marginTop: 16 }}>
+              <span className="start-btn__glow" aria-hidden="true" />
+              <span className="start-btn__icon" aria-hidden="true">🚀</span>
+              <span className="start-btn__body">
+                <span className="start-btn__title">Начать обучение</span>
+                <span className="start-btn__desc">Выберете вид занятия и настройки на следующем шаге</span>
+              </span>
+              <span className="start-btn__chev" aria-hidden="true">→</span>
+            </Link>
+
+            {s.weak > 0 && (
+              <Link to="/review" className="btn btn--block" style={{ marginTop: 10 }}>
+                🔁 Быстро повторить ошибки ({s.weak})
+              </Link>
+            )}
+
+            {/* ---------- 4. Прогресс: шкала + график ---------- */}
+            <div className={wide ? 'grid grid-2' : 'stack'} style={{ marginTop: 18 }}>
+              <ProgressScale
+                known={s.known}
+                learning={s.learning}
+                fresh={s.fresh}
+                total={s.total}
+                percent={s.progressPercent}
+              />
+              <ActivityChart days={wide ? 14 : 7} />
+            </div>
+
+            {/* ---------- 5. Показатели ---------- */}
+            <div className="grid grid-4" style={{ marginTop: 12 }}>
+              <StatTile to="/employees"        icon="👥" label="Сотрудников"  value={s.total}       loading={loading} />
+              <StatTile to="/insight/known"    icon="✅" label="Изучено"      value={s.known}       loading={loading} color="var(--success)" />
+              <StatTile to="/insight/weak"     icon="⚠️" label="Слабые места" value={s.weak}        loading={loading} color="var(--danger)" />
+              <StatTile to="/insight/accuracy" icon="🎯" label="Точность"     value={s.avgAccuracy} suffix="%" loading={loading} />
+            </div>
+
+            <p className="center" style={{ marginTop: 14 }}>
+              <Link to="/insight/progress" className="link-quiet">Подробный разбор прогресса →</Link>
+            </p>
+
+            {/* ---------- 6. Справка, свёрнута ---------- */}
+            <div style={{ marginTop: 18 }}>
+              <HowItWorks />
+            </div>
+          </>
+        )}
       </div>
-
-      {/* Общий прогресс */}
-      <div className="card" style={{ marginBottom: 16 }}>
-        <div className="row" style={{ justifyContent: 'space-between' }}>
-          <strong>Общий прогресс</strong>
-          <span className="muted small">{s.progressPercent}%</span>
-        </div>
-        <div className="progress" style={{ marginTop: 10 }}>
-          <div
-            className={`progress__bar${s.progressPercent === 100 ? ' progress__bar--success' : ''}`}
-            style={{ width: `${s.progressPercent}%` }}
-          />
-        </div>
-        <div className="row small muted" style={{ marginTop: 10, gap: 14 }}>
-          <span>Не изучено: {s.fresh}</span>
-          <span>В процессе: {s.learning}</span>
-          <span>Выучено: {s.known}</span>
-        </div>
-      </div>
-
-      {/* Кнопки действий */}
-      <div className="stack" style={{ marginBottom: 16 }}>
-        <Link to="/learn" className="btn btn--primary btn--lg btn--block">▶ Начать обучение</Link>
-
-        <div className="grid grid-2">
-          <Link to="/cards" className="btn btn--block">🗂 Карточки</Link>
-          <Link to="/test" className="btn btn--block">✍️ Тест</Link>
-          <Link to="/review" className="btn btn--block">🔁 Повторить ошибки</Link>
-          <Link to="/employees" className="btn btn--block">👥 Сотрудники</Link>
-          <Link to="/stats" className="btn btn--block">📊 Статистика</Link>
-          <Link to="/import" className="btn btn--block">📂 Импорт</Link>
-        </div>
-      </div>
-
-      {/* Подсказка, если база пуста */}
-      {!loading && s.total === 0 && (
-        <div className="card center">
-          <p><strong>Сотрудников пока нет</strong></p>
-          <p className="muted small">Добавьте их вручную или загрузите список из файла Excel.</p>
-          <Link to="/employees" className="btn btn--primary">Перейти к сотрудникам</Link>
-        </div>
-      )}
     </div>
   )
 }
