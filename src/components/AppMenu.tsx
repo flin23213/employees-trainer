@@ -22,6 +22,7 @@ const SECTIONS = [
   { to: '/review',    icon: '🔁', label: 'Повторить ошибки' },
   { to: '/stats',     icon: '📊', label: 'Статистика' },
   { to: '/employees', icon: '👥', label: 'Сотрудники' },
+  { to: '/lists',     icon: '📚', label: 'Профили списков' },
   { to: '/import',    icon: '📂', label: 'Импорт из файла' },
   { to: '/share',     icon: '🤝', label: 'Обмен списками' },
 ]

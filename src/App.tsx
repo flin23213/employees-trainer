@@ -14,6 +14,7 @@ import ProfileScreen from './screens/ProfileScreen'
 import InsightScreen from './screens/InsightScreen'
 import LearnScreen from './screens/LearnScreen'
 import ShareScreen from './screens/ShareScreen'
+import ListsScreen from './screens/ListsScreen'
 import NewPasswordScreen from './screens/NewPasswordScreen'
 
 /**
@@ -108,6 +109,7 @@ export default function App() {
         <Route path="/stats" element={<StatsScreen />} />
         <Route path="/profile" element={<ProfileScreen />} />
         <Route path="/share" element={<ShareScreen />} />
+        <Route path="/lists" element={<ListsScreen />} />
         {/* Разбор показателя с главного экрана: known | weak | learning | new | accuracy | progress */}
         <Route path="/insight/:group" element={<InsightScreen />} />
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -9,6 +9,7 @@ import StatTile from '../components/StatTile'
 import ProgressScale from '../components/ProgressScale'
 import ActivityChart from '../components/ActivityChart'
 import { computeStats, useEmployees } from '../lib/employees'
+import { useLists } from '../lib/lists'
 
 /* ------------------------------------------------------------------ */
 /*  «Живой» смайлик: лица меняются сами                               */
@@ -106,6 +107,7 @@ function HowItWorks() {
 /* ------------------------------------------------------------------ */
 export default function HomeScreen() {
   const { list, loading, error } = useEmployees()
+  const { active } = useLists()          // какой профиль списка сейчас выбран
   const s = computeStats(list)
   const wide = useIsWide()
   const empty = !loading && s.total === 0
@@ -128,13 +130,22 @@ export default function HomeScreen() {
               </h2>
               <p className="hero__note">
                 {empty
-                  ? 'В базе пока никого нет. Добавьте сотрудников — и тренажёр оживёт.'
+                  ? 'В этом профиле пока никого нет. Добавьте сотрудников — и тренажёр оживёт.'
                   : loading
                     ? 'Обновляю данные…'
                     : s.weak > 0
                       ? `Точность ${s.avgAccuracy}% · есть ${s.weak} слабых мест`
                       : `Точность ${s.avgAccuracy}% · слабых мест нет`}
               </p>
+
+              {/* Какой список сотрудников сейчас открыт */}
+              {active && (
+                <Link to="/lists" className="list-chip">
+                  <span aria-hidden="true">{active.emoji}</span>
+                  <span className="truncate">{active.name}</span>
+                  <span className="list-chip__go" aria-hidden="true">· сменить ›</span>
+                </Link>
+              )}
             </div>
           </div>
         </div>

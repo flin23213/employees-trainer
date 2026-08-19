@@ -886,95 +886,34 @@ a.chip, a.chip:hover {
    коды приглашения.
    ============================================================================ */
 
-/* ---------- 22. ОБЕЗЬЯНКА (настоящие картинки, не смайлики) ------------- */
-/*  Картинки лежат в public/monkey/: hang, drop, fall, peek, hide, vine.
-    Анимация — обычные CSS-кадры, никаких библиотек не требуется.          */
+/* ---------- 22. ОБЕЗЬЯНКА У ПОЛЯ ПАРОЛЯ -------------------------------- */
+/*  Осталось только самое нужное: через пару секунд после загрузки она
+    выглядывает из-за поля пароля, закрывает глаза при вводе и полностью
+    уезжает вниз, когда пароль показывают или нажимают «Войти».
+    Картинки: public/monkey/peek.webp и hide.webp                          */
 
-/* 22.1 Висит на лиане над карточкой входа */
-.mk {
-  position: absolute;
-  top: -76px;                     /* насколько выступает над карточкой */
-  right: 22px;                    /* отступ от правого края карточки */
-  width: clamp(88px, 19vw, 120px);
-  z-index: 5;
-  pointer-events: none;
-}
-.mk__rope {
-  position: relative;
-  display: block;
-  transform-origin: 50% 0;        /* качается, как маятник, из верхней точки */
-  animation: ropeSwing 2.8s ease-in-out infinite alternate;
-}
-.mk__vine {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-/*  ЕСЛИ ОБЕЗЬЯНКА ВИСИТ НЕ НА КОНЦЕ ЛИАНЫ — поменяйте эти два числа:
-    left сдвигает вправо-влево, top — вверх-вниз.                          */
-.mk__monkey {
-  position: absolute;
-  left: 29.5%;                    /* лапа приходится ровно на конец лианы */
-  top: 100%;                      /* обезьянка начинается там, где лиана кончается */
-  width: 100%;
-  height: auto;
-  transform-origin: 50% 10%;
-}
-
-@keyframes ropeSwing {
-  from { transform: rotate(-6deg); }
-  to   { transform: rotate(6deg); }
-}
-
-/* 22.2 Бросает банан, срывается и падает */
-.mk--drop .mk__monkey { animation: mkThrow .34s ease-out both; }
-.mk--fall .mk__monkey { animation: mkFall 1s cubic-bezier(.4,.05,.75,1) forwards; }
-.mk--fall .mk__rope   { animation: ropeSnap .85s ease-out forwards; }
-
-@keyframes mkThrow {
-  0%   { transform: rotate(0) scale(1); }
-  40%  { transform: rotate(-7deg) scale(1.04); }
-  100% { transform: rotate(3deg) scale(1); }
-}
-@keyframes mkFall {
-  /* Без кувырка: только лёгкое покачивание, будто болтается в воздухе */
-  0%   { transform: translate(0, 0) rotate(0); opacity: 1; }
-  20%  { transform: translate(-5px, 34px) rotate(-7deg); opacity: 1; }
-  55%  { transform: translate(4px, 150px) rotate(6deg); opacity: 1; }
-  80%  { transform: translate(-2px, 250px) rotate(-4deg); opacity: 1; }
-  100% { transform: translate(0, 340px) rotate(3deg); opacity: 0; }
-}
-@keyframes ropeSnap {
-  0%   { transform: rotate(5deg); }
-  30%  { transform: rotate(-11deg) scaleY(1.04); }
-  100% { transform: rotate(1deg) scaleY(.6); opacity: 0; }
-}
-
-/* 22.3 Выглядывает из-за поля пароля */
 .pw { position: relative; }
 .pw__input { position: relative; z-index: 2; }   /* поле закрывает её собой */
 
 .peek {
   position: absolute;
-  right: 4px;
-  bottom: calc(100% - 7px);       /* низ картинки заходит под верхний край поля */
-  width: clamp(76px, 17vw, 100px);
-  overflow: hidden;               /* всё, что ниже, «спрятано за полем» */
+  right: 6px;
+  bottom: calc(100% - 8px);        /* низ картинки заходит под верхний край поля */
+  width: clamp(72px, 16vw, 96px);
+  overflow: hidden;                /* всё, что ниже, скрыто за полем */
   z-index: 1;
   display: block;
   line-height: 0;
-  cursor: pointer;                /* по ней можно щёлкнуть */
+  cursor: pointer;
 }
 .peek__img {
   display: block;
   width: 100%;
   height: auto;
-  transform: translateY(120%);    /* до падения её не видно */
-  transition: transform .45s cubic-bezier(.34,1.25,.5,1);
+  transform: translateY(115%);     /* спрятана: не торчит ни один пиксель */
+  transition: transform .45s cubic-bezier(.34,1.2,.5,1);
 }
-.peek.is-in.peek--watch .peek__img { transform: translateY(0); }      /* смотрит */
-.peek.is-in.peek--peek  .peek__img { transform: translateY(50%); }    /* видны только глаза */
-.peek.is-in.peek--hide  .peek__img { transform: translateY(4%); }     /* закрыла глаза */
+.peek.is-in .peek__img { transform: translateY(0); }   /* показалась целиком */
 
 /* ---------- 23. ГАЛОЧКА «ПОКАЗАТЬ ПАРОЛЬ» ------------------------------ */
 .check {
@@ -1050,7 +989,73 @@ a.chip, a.chip:hover {
 
 @media (prefers-reduced-motion: reduce) {
   .code-box__value { animation: none !important; }
-  .mk { display: none; }
-  .mk__rope, .mk__monkey { animation: none !important; }
   .peek__img { transition: none; }
 }
+
+/* ---------- 25. ПРОФИЛИ СПИСКОВ ---------------------------------------- */
+.active-list {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-color: var(--primary);
+  background: linear-gradient(120deg, var(--primary-soft) 0%, var(--bg-elevated) 70%);
+}
+.active-list__emoji { font-size: 2rem; flex: none; }
+
+.list-card { transition: border-color .15s ease; }
+.list-card.is-active { border-color: var(--primary); }
+
+.list-card__main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.list-card__main:disabled { cursor: default; }
+.list-card__emoji { font-size: 1.7rem; flex: none; }
+.list-card__name { font-weight: 700; display: block; }
+.list-card__acts {
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+  flex-wrap: wrap;
+}
+
+.emoji-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.emoji-btn {
+  width: 42px; height: 42px;
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  background: var(--bg-elevated);
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: transform .12s ease, border-color .15s ease, background-color .15s ease;
+}
+.emoji-btn:hover { transform: translateY(-2px); }
+.emoji-btn.is-on { border-color: var(--primary); background: var(--primary-soft); }
+
+/* Плашка активного профиля на главном экране */
+.list-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  font-size: .8rem;
+  font-weight: 700;
+  color: var(--text);
+  max-width: 100%;
+}
+@media (hover: hover) { .list-chip:hover { border-color: var(--primary); } }
+.list-chip__go { color: var(--text-muted); }
