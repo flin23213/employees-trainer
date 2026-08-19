@@ -75,34 +75,49 @@ function AuthLogo() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Вступление: обезьянка на лиане падает, банан улетает               */
+/*  Обезьянка. Кадры лежат в public/monkey/ и просто подменяются:       */
+/*  hang -> drop -> fall (вступление), потом peek / hide у поля пароля. */
 /* ------------------------------------------------------------------ */
-type Intro = 'hang' | 'fall' | 'done'
+const MONKEY_FRAMES = ['hang', 'drop', 'fall', 'peek', 'hide', 'vine'] as const
 
-function MonkeyIntro({ phase }: { phase: Intro }) {
+/** Показ картинок без мигания: браузер скачивает их заранее */
+function usePreloadMonkey() {
+  useEffect(() => {
+    MONKEY_FRAMES.forEach((name) => {
+      const img = new Image()
+      img.src = `/monkey/${name}.webp`
+    })
+  }, [])
+}
+
+type Intro = 'hang' | 'drop' | 'fall' | 'done'
+
+function MonkeySwing({ phase }: { phase: Intro }) {
   if (phase === 'done') return null
 
+  const frame = phase === 'hang' ? 'hang' : phase === 'drop' ? 'drop' : 'fall'
+
   return (
-    <div className={'intro intro--' + phase} aria-hidden="true">
-      <span className="intro__vine">
-        <span className="intro__leaf">{'\u{1F343}'}</span>
-        <span className="intro__monkey">{'\u{1F412}'}</span>
-        <span className="intro__banana">{'\u{1F34C}'}</span>
-      </span>
+    <div className={'mk mk--' + phase} aria-hidden="true">
+      <div className="mk__rope">
+        <img className="mk__vine" src="/monkey/vine.webp" alt="" />
+        <img className="mk__monkey" src={`/monkey/${frame}.webp`} alt="" />
+      </div>
     </div>
   )
 }
 
-/* ------------------------------------------------------------------ */
-/*  Обезьянка, которая выглядывает из-за поля пароля                   */
-/*  watch — смотрит целиком, peek — только глаза, hide — закрыла глаза  */
-/* ------------------------------------------------------------------ */
+/* watch — смотрит целиком, peek — видны только глаза, hide — закрыла глаза */
 type MonkeyState = 'watch' | 'peek' | 'hide'
 
-function PeekMonkey({ state, show }: { state: MonkeyState; show: boolean }) {
+function PeekMonkey({ state, show, onPoke }: { state: MonkeyState; show: boolean; onPoke: () => void }) {
   return (
-    <span className={'peek peek--' + state + (show ? ' is-in' : '')} aria-hidden="true">
-      <span className="peek__face">{state === 'hide' ? '\u{1F648}' : '\u{1F412}'}</span>
+    <span
+      className={'peek peek--' + state + (show ? ' is-in' : '')}
+      onClick={onPoke}
+      role="presentation"
+    >
+      <img className="peek__img" src={state === 'hide' ? '/monkey/hide.webp' : '/monkey/peek.webp'} alt="" />
     </span>
   )
 }
@@ -124,14 +139,26 @@ export default function AuthScreen() {
   /* --- поведение обезьянки --- */
   const [intro, setIntro] = useState<Intro>('hang')
   const [typing, setTyping] = useState(false)
+  const [poked, setPoked] = useState(false)
   const typingTimer = useRef<number | null>(null)
+  const pokeTimer = useRef<number | null>(null)
 
-  // Сюжет: висит ~1,9 с -> падает 1 с -> дальше выглядывает из-за поля
+  usePreloadMonkey()
+
+  // Сюжет: висит 2,2 с -> бросает банан -> падает 1 с -> выглядывает из-за поля
   useEffect(() => {
-    const t1 = window.setTimeout(() => setIntro('fall'), 1900)
-    const t2 = window.setTimeout(() => setIntro('done'), 2900)
-    return () => { window.clearTimeout(t1); window.clearTimeout(t2) }
+    const t1 = window.setTimeout(() => setIntro('drop'), 2200)
+    const t2 = window.setTimeout(() => setIntro('fall'), 2540)
+    const t3 = window.setTimeout(() => setIntro('done'), 3500)
+    return () => { window.clearTimeout(t1); window.clearTimeout(t2); window.clearTimeout(t3) }
   }, [])
+
+  /** Щёлкнули по обезьянке — смущается и на секунду прячется */
+  function poke() {
+    setPoked(true)
+    if (pokeTimer.current !== null) window.clearTimeout(pokeTimer.current)
+    pokeTimer.current = window.setTimeout(() => setPoked(false), 1000)
+  }
 
   // Пока печатают — закрывает глаза. Через 1,3 с после последней клавиши
   // считаем, что ввод закончен, и она осторожно подглядывает.
@@ -143,11 +170,15 @@ export default function AuthScreen() {
   }
 
   useEffect(() => {
-    return () => { if (typingTimer.current !== null) window.clearTimeout(typingTimer.current) }
+    return () => {
+      if (typingTimer.current !== null) window.clearTimeout(typingTimer.current)
+      if (pokeTimer.current !== null) window.clearTimeout(pokeTimer.current)
+    }
   }, [])
 
   const monkeyState: MonkeyState =
-    showPass ? 'watch'                       // «показать пароль» — смотрит открыто
+    poked ? 'hide'                           // щёлкнули по ней — застеснялась
+    : showPass ? 'watch'                     // «показать пароль» — смотрит открыто
     : typing ? 'hide'                        // печатают — закрыла глаза
     : password.length > 0 ? 'peek'           // ввод закончен — подглядывает
     : 'watch'
@@ -285,8 +316,8 @@ export default function AuthScreen() {
         {/* =============== ФОРМА =============== */}
         <div className="auth__formside">
           <div className="auth__card">
-            {/* Обезьянка на лиане: только в первые секунды */}
-            <MonkeyIntro phase={intro} />
+            {/* Обезьянка на лиане: только первые секунды после загрузки */}
+            <MonkeySwing phase={intro} />
 
             {view === 'auth' ? (
               <>
@@ -333,7 +364,7 @@ export default function AuthScreen() {
 
                     {/* Обёртка нужна, чтобы обезьянка села за верхний край поля */}
                     <div className="pw">
-                      <PeekMonkey state={monkeyState} show={intro === 'done'} />
+                      <PeekMonkey state={monkeyState} show={intro === 'done'} onPoke={poke} />
                       <input
                         id="password"
                         className="input pw__input"

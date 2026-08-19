@@ -886,83 +886,95 @@ a.chip, a.chip:hover {
    коды приглашения.
    ============================================================================ */
 
-/* ---------- 22. ОБЕЗЬЯНКА: ЛИАНА, ПАДЕНИЕ, ПОДГЛЯДЫВАНИЕ --------------- */
+/* ---------- 22. ОБЕЗЬЯНКА (настоящие картинки, не смайлики) ------------- */
+/*  Картинки лежат в public/monkey/: hang, drop, fall, peek, hide, vine.
+    Анимация — обычные CSS-кадры, никаких библиотек не требуется.          */
 
-/* 22.1 Вступление: висит на лиане в правом верхнем углу карточки */
-.intro {
+/* 22.1 Висит на лиане над карточкой входа */
+.mk {
   position: absolute;
-  top: 6px;
-  right: 30px;
-  width: 0; height: 0;
-  z-index: 4;
+  top: -76px;                     /* насколько выступает над карточкой */
+  right: 22px;                    /* отступ от правого края карточки */
+  width: clamp(88px, 19vw, 120px);
+  z-index: 5;
   pointer-events: none;
 }
-.intro__vine {
-  position: absolute;
-  top: -22px; left: 0;
+.mk__rope {
+  position: relative;
   display: block;
-  width: 4px; height: 62px;
-  border-radius: 3px;
-  background: linear-gradient(180deg, #7bc043 0%, #4a8c2a 100%);
-  transform-origin: top center;
-  animation: vineSwing 2.4s ease-in-out infinite alternate;
+  transform-origin: 50% 0;        /* качается, как маятник, из верхней точки */
+  animation: ropeSwing 2.8s ease-in-out infinite alternate;
 }
-.intro__leaf   { position: absolute; top: -14px; left: -9px;  font-size: 1.1rem; }
-.intro__monkey { position: absolute; bottom: -26px; left: -14px; font-size: 1.9rem; }
-.intro__banana { position: absolute; bottom: -16px; left: 16px;  font-size: 1.1rem; transform: rotate(18deg); }
-
-@keyframes vineSwing {
-  from { transform: rotate(-7deg); }
-  to   { transform: rotate(7deg); }
+.mk__vine {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+/*  ЕСЛИ ОБЕЗЬЯНКА ВИСИТ НЕ НА КОНЦЕ ЛИАНЫ — поменяйте эти два числа:
+    left сдвигает вправо-влево, top — вверх-вниз.                          */
+.mk__monkey {
+  position: absolute;
+  left: 29.5%;                    /* лапа приходится ровно на конец лианы */
+  top: 100%;                      /* обезьянка начинается там, где лиана кончается */
+  width: 100%;
+  height: auto;
+  transform-origin: 50% 10%;
 }
 
-/* 22.2 Падение: лиана распрямляется, обезьянка летит вниз, банан в сторону */
-.intro--fall .intro__vine   { animation: vineSnap .7s ease-out forwards; }
-.intro--fall .intro__monkey { animation: monkeyFall 1s cubic-bezier(.45,.05,.75,1) forwards; }
-.intro--fall .intro__banana { animation: bananaFly .85s ease-out forwards; }
-
-@keyframes vineSnap {
-  0%   { transform: rotate(6deg); }
-  35%  { transform: rotate(-10deg) scaleY(1.05); }
-  100% { transform: rotate(0) scaleY(.55); opacity: 0; }
+@keyframes ropeSwing {
+  from { transform: rotate(-6deg); }
+  to   { transform: rotate(6deg); }
 }
-@keyframes monkeyFall {
+
+/* 22.2 Бросает банан, срывается и падает */
+.mk--drop .mk__monkey { animation: mkThrow .34s ease-out both; }
+.mk--fall .mk__monkey { animation: mkFall 1s cubic-bezier(.4,.05,.75,1) forwards; }
+.mk--fall .mk__rope   { animation: ropeSnap .85s ease-out forwards; }
+
+@keyframes mkThrow {
+  0%   { transform: rotate(0) scale(1); }
+  40%  { transform: rotate(-7deg) scale(1.04); }
+  100% { transform: rotate(3deg) scale(1); }
+}
+@keyframes mkFall {
+  /* Без кувырка: только лёгкое покачивание, будто болтается в воздухе */
   0%   { transform: translate(0, 0) rotate(0); opacity: 1; }
-  25%  { transform: translate(-4px, 26px) rotate(120deg); opacity: 1; }
-  75%  { transform: translate(2px, 132px) rotate(330deg); opacity: .9; }
-  100% { transform: translate(0, 176px) rotate(430deg); opacity: 0; }
+  20%  { transform: translate(-5px, 34px) rotate(-7deg); opacity: 1; }
+  55%  { transform: translate(4px, 150px) rotate(6deg); opacity: 1; }
+  80%  { transform: translate(-2px, 250px) rotate(-4deg); opacity: 1; }
+  100% { transform: translate(0, 340px) rotate(3deg); opacity: 0; }
 }
-@keyframes bananaFly {
-  0%   { transform: translate(0, 0) rotate(18deg); opacity: 1; }
-  60%  { transform: translate(58px, -34px) rotate(220deg); opacity: .9; }
-  100% { transform: translate(96px, 30px) rotate(400deg); opacity: 0; }
+@keyframes ropeSnap {
+  0%   { transform: rotate(5deg); }
+  30%  { transform: rotate(-11deg) scaleY(1.04); }
+  100% { transform: rotate(1deg) scaleY(.6); opacity: 0; }
 }
 
-/* 22.3 Обезьянка за полем пароля */
+/* 22.3 Выглядывает из-за поля пароля */
 .pw { position: relative; }
-.pw__input { position: relative; z-index: 2; }   /* поле закрывает обезьянку собой */
+.pw__input { position: relative; z-index: 2; }   /* поле закрывает её собой */
 
 .peek {
   position: absolute;
-  right: 12px;
-  bottom: calc(100% - 5px);        /* нижний край упирается в верх поля */
-  width: 42px; height: 34px;
-  overflow: hidden;                /* всё, что ниже, «спрятано за полем» */
+  right: 4px;
+  bottom: calc(100% - 7px);       /* низ картинки заходит под верхний край поля */
+  width: clamp(76px, 17vw, 100px);
+  overflow: hidden;               /* всё, что ниже, «спрятано за полем» */
   z-index: 1;
   display: block;
-  pointer-events: none;
+  line-height: 0;
+  cursor: pointer;                /* по ней можно щёлкнуть */
 }
-.peek__face {
+.peek__img {
   display: block;
-  font-size: 1.85rem;
-  line-height: 1;
-  text-align: center;
-  transform: translateY(115%);     /* до вступления не видна */
-  transition: transform .4s cubic-bezier(.3,.9,.3,1.35);
+  width: 100%;
+  height: auto;
+  transform: translateY(120%);    /* до падения её не видно */
+  transition: transform .45s cubic-bezier(.34,1.25,.5,1);
 }
-.peek.is-in.peek--watch .peek__face { transform: translateY(6%); }   /* смотрит открыто */
-.peek.is-in.peek--peek  .peek__face { transform: translateY(44%); }  /* видны только глаза */
-.peek.is-in.peek--hide  .peek__face { transform: translateY(26%); }  /* закрыла глаза */
+.peek.is-in.peek--watch .peek__img { transform: translateY(0); }      /* смотрит */
+.peek.is-in.peek--peek  .peek__img { transform: translateY(50%); }    /* видны только глаза */
+.peek.is-in.peek--hide  .peek__img { transform: translateY(4%); }     /* закрыла глаза */
 
 /* ---------- 23. ГАЛОЧКА «ПОКАЗАТЬ ПАРОЛЬ» ------------------------------ */
 .check {
@@ -1038,6 +1050,7 @@ a.chip, a.chip:hover {
 
 @media (prefers-reduced-motion: reduce) {
   .code-box__value { animation: none !important; }
-  .intro { display: none; }
-  .peek__face { transition: none; }
+  .mk { display: none; }
+  .mk__rope, .mk__monkey { animation: none !important; }
+  .peek__img { transition: none; }
 }
