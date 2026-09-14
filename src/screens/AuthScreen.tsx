@@ -1,14 +1,8 @@
-// Путь: src/screens/AuthScreen.tsx
-// Экран входа, регистрации и восстановления пароля.
-// Обезьянка: висит на лиане, падает (банан улетает), потом выглядывает
-// из-за поля пароля и реагирует на ввод.
-// Сама обезьянка вынесена в src/components/Monkey.tsx: там анимация,
-// моргание и подгонка кадров друг под друга.
-
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
-import Monkey from '../components/Monkey'
+import { getEnabledSocialProviders, oauthCallbackError, signInWithSocialProvider, SOCIAL_PROVIDERS } from '../lib/socialAuth'
+import type { Provider } from '@supabase/supabase-js'
 
 /** Переводим технические сообщения Supabase на понятный русский */
 function translateError(message: string): string {
@@ -18,8 +12,8 @@ function translateError(message: string): string {
   if (m.includes('password should be at least')) return 'Пароль слишком короткий: нужно минимум 6 символов.'
   if (m.includes('unable to validate email address')) return 'Похоже, email введён с ошибкой.'
   if (m.includes('email logins are disabled')) return 'Вход по email отключён в настройках Supabase.'
-  if (m.includes('email not confirmed')) return 'Email не подтверждён. Отключите «Confirm email» в настройках Supabase.'
-  if (m.includes('failed to fetch')) return 'Нет связи с сервером. Проверьте интернет и адрес в .env.local.'
+  if (m.includes('email not confirmed')) return 'Подтвердите email по ссылке из письма, затем войдите.'
+  if (m.includes('failed to fetch')) return 'Нет связи с сервером. Проверьте интернет и попробуйте ещё раз.'
   if (m.includes('for security purposes')) return 'Слишком много попыток. Подождите минуту и попробуйте снова.'
   if (m.includes('redirect') && m.includes('not allowed'))
     return 'Адрес возврата не разрешён в Supabase: добавьте его в Authentication → URL Configuration.'
@@ -88,49 +82,29 @@ export default function AuthScreen() {
   const [password, setPassword] = useState('')
   const [showPass, setShowPass] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(oauthCallbackError)
   const [info, setInfo] = useState<string | null>(null)
+  const [enabledProviders, setEnabledProviders] = useState<string[]>([])
 
-  /* --- поведение обезьянки --- */
-  const [shown, setShown] = useState(false)      // показалась ли она вообще
-  const [typing, setTyping] = useState(false)    // прямо сейчас вводят пароль
-  const [poked, setPoked] = useState(false)      // щёлкнули по ней
-  const typingTimer = useRef<number | null>(null)
-  const pokeTimer = useRef<number | null>(null)
-
-  // Через 1,6 секунды после открытия страницы выглядывает из-за поля
   useEffect(() => {
-    const t = window.setTimeout(() => setShown(true), 1600)
-    return () => window.clearTimeout(t)
+    const controller = new AbortController()
+    getEnabledSocialProviders(controller.signal).then(setEnabledProviders).catch(() => {
+      // Email sign-in stays available when provider discovery is offline.
+    })
+    return () => controller.abort()
   }, [])
 
-  // Пока печатают — глаза закрыты. Через 1,2 с после последней клавиши
-  // считаем, что ввод закончен, и она открывает глаза.
-  function handlePasswordChange(value: string) {
-    setPassword(value)
-    setTyping(true)
-    if (typingTimer.current !== null) window.clearTimeout(typingTimer.current)
-    typingTimer.current = window.setTimeout(() => setTyping(false), 1200)
-  }
-
-  /** Щёлкнули по обезьянке — на секунду закрывает глаза */
-  function poke() {
-    setPoked(true)
-    if (pokeTimer.current !== null) window.clearTimeout(pokeTimer.current)
-    pokeTimer.current = window.setTimeout(() => setPoked(false), 900)
-  }
-
-  useEffect(() => {
-    return () => {
-      if (typingTimer.current !== null) window.clearTimeout(typingTimer.current)
-      if (pokeTimer.current !== null) window.clearTimeout(pokeTimer.current)
+  async function handleSocialLogin(provider: Provider) {
+    setBusy(true)
+    setError(null)
+    setInfo(null)
+    try {
+      await signInWithSocialProvider(provider)
+    } catch (cause) {
+      setError(translateError(cause instanceof Error ? cause.message : String(cause)))
+      setBusy(false)
     }
-  }, [])
-
-  // Видна, если: уже показалась, пароль не раскрыт, форма не отправляется
-  // и мы не на экране восстановления пароля.
-  const monkeyVisible = shown && !showPass && !busy && view === 'auth'
-  const monkeyEyesClosed = typing || poked
+  }
 
   /* ------------------------- вход и регистрация ------------------------- */
   async function handleSubmit(e: FormEvent) {
@@ -237,7 +211,7 @@ export default function AuthScreen() {
               <span className="chip">🃏 Карточки со свайпами</span>
               <span className="chip">✍️ Тесты с проверкой опечаток</span>
               <span className="chip">📈 График занятий</span>
-              <span className="chip">📂 Импорт из Excel</span>
+              <span className="chip">📂 Импорт из Excel и фото</span>
               <span className="chip">🤝 Обмен списками по коду</span>
             </div>
           </Reveal>
@@ -246,7 +220,7 @@ export default function AuthScreen() {
             <div className="auth__how">
               <h2 className="section__title" style={{ marginBottom: 14 }}>Как это работает</h2>
               <ol className="steps">
-                <li><span className="steps__num">1</span><span><strong>Загружаете список.</strong> Excel, CSV или просто текст, скопированный откуда угодно.</span></li>
+                <li><span className="steps__num">1</span><span><strong>Загружаете список.</strong> Excel, CSV, текстовый файл или фотографию печатного списка.</span></li>
                 <li><span className="steps__num">2</span><span><strong>Занимаетесь 5 минут в день.</strong> Карточки для узнавания, тест для проверки.</span></li>
                 <li><span className="steps__num">3</span><span><strong>Тренажёр запоминает ошибки</strong> и возвращает трудных людей чаще, а выученных — реже.</span></li>
                 <li><span className="steps__num">4</span><span><strong>Смотрите прогресс.</strong> Видно, кого знаете, где слабые места и сколько дней подряд занимаетесь.</span></li>
@@ -284,8 +258,21 @@ export default function AuthScreen() {
                 <p className="muted small center" style={{ margin: '14px 0 18px' }}>
                   {mode === 'signin'
                     ? 'С возвращением! Продолжим с того места, где остановились.'
-                    : 'Аккаунт создаётся за минуту, ничего подтверждать не нужно.'}
+                    : 'Создайте аккаунт с помощью email или доступного сервиса.'}
                 </p>
+
+                {enabledProviders.length > 0 && (
+                  <div className="auth__social" aria-label="Вход через сервисы">
+                    {SOCIAL_PROVIDERS.filter(p => enabledProviders.includes(p.id)).map(provider => (
+                      <button type="button" className="btn btn--ghost btn--block" key={provider.id}
+                        disabled={busy} onClick={() => handleSocialLogin(provider.id)}>
+                        <span className="auth__provider-mark" aria-hidden="true">{provider.mark}</span>
+                        Продолжить с {provider.label}
+                      </button>
+                    ))}
+                    <p className="muted small center">или с помощью email</p>
+                  </div>
+                )}
 
                 <form onSubmit={handleSubmit} key={mode} className="auth__form">
                   <div className="field">
@@ -305,21 +292,16 @@ export default function AuthScreen() {
                   </div>
 
                   <div className="field">
-                    {/* Слева от обезьянки: она сидит над правым краем поля */}
                     <label className="label" htmlFor="password">Пароль</label>
-
-                    {/* Обёртка нужна, чтобы обезьянка села за верхний край поля */}
-                    <div className="pw">
-                      <Monkey visible={monkeyVisible} eyesClosed={monkeyEyesClosed} onPoke={poke} />
+                    <div className="password-field">
                       <input
                         id="password"
-                        className="input pw__input"
+                        className="input"
                         type={showPass ? 'text' : 'password'}
                         autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
                         placeholder="минимум 6 символов"
                         value={password}
-                        onChange={(e) => handlePasswordChange(e.target.value)}
-                        onBlur={() => setTyping(false)}
+                        onChange={(e) => setPassword(e.target.value)}
                         minLength={6}
                         required
                       />

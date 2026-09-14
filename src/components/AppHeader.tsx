@@ -6,14 +6,12 @@ import AppMenu from './AppMenu'
 /** Небольшой хук темы: помнит выбор пользователя между запусками */
 function useTheme() {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    const saved = localStorage.getItem('theme')
-    if (saved === 'light' || saved === 'dark') return saved
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+    return document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light'
   })
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
-    localStorage.setItem('theme', theme)
+    try { localStorage.setItem('theme', theme) } catch { /* Storage can be unavailable. */ }
   }, [theme])
 
   return { theme, toggle: () => setTheme(theme === 'light' ? 'dark' : 'light') }

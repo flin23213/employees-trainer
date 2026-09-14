@@ -1,10 +1,486 @@
-/* ============================================================================
-   ui.css — второй слой оформления: главный экран, брифинги, свайпы, анимации.
-   Подключается в main.tsx СРАЗУ ПОСЛЕ index.css и ничего в нём не ломает:
-   здесь только новые классы.
-   ============================================================================ */
+/* Единое оформление приложения: тема, общие элементы и экраны. */
+.auth__social { display: grid; gap: 10px; margin-bottom: 16px; }
+.auth__social p { margin: 0; }
+.auth__provider-mark { display: inline-grid; place-items: center; width: 28px; font-weight: 800; }
+:root {
+  --bg:            #f5f6f8;
+  --bg-elevated:   #ffffff;
+  --bg-subtle:     #eceef2;
+  --text:          #14161a;
+  --text-muted:    #6b7280;
+  --border:        #e2e5ea;
 
-/* ---------- 1. ЗАГОЛОВКИ РАЗДЕЛОВ (иерархия страницы) --------------------- */
+  --primary:       #4f46e5;
+  --primary-hover: #4338ca;
+  --primary-soft:  #eef2ff;
+  --on-primary:    #ffffff;
+
+  --success:       #16a34a;
+  --success-soft:  #e8f7ee;
+  --danger:        #dc2626;
+  --danger-soft:   #fdecec;
+  --warning:       #d97706;
+  --warning-soft:  #fdf3e3;
+
+  --radius:        16px;
+  --radius-sm:     10px;
+  --shadow:        0 1px 2px rgba(16, 18, 24, .06), 0 8px 24px rgba(16, 18, 24, .06);
+  --shadow-sm:     0 1px 2px rgba(16, 18, 24, .08);
+  --safe-top:      env(safe-area-inset-top, 0px);
+  --safe-bottom:   env(safe-area-inset-bottom, 0px);
+
+  color-scheme: light;
+}
+:root[data-theme='dark'] {
+  --bg:            #0f1115;
+  --bg-elevated:   #181b21;
+  --bg-subtle:     #22262e;
+  --text:          #f2f4f7;
+  --text-muted:    #9aa2af;
+  --border:        #2a2f38;
+
+  --primary:       #7c74ff;
+  --primary-hover: #8f88ff;
+  --primary-soft:  #22213a;
+  --on-primary:    #ffffff;
+
+  --success:       #34d399;
+  --success-soft:  #12261f;
+  --danger:        #f87171;
+  --danger-soft:   #2a1618;
+  --warning:       #fbbf24;
+  --warning-soft:  #2a2113;
+
+  --shadow:        0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .35);
+  --shadow-sm:     0 1px 2px rgba(0, 0, 0, .4);
+
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+               'Helvetica Neue', Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+  overflow-x: hidden;
+  transition: background-color .2s ease, color .2s ease;
+}
+
+h1, h2, h3 { margin: 0 0 .5rem; line-height: 1.25; font-weight: 700; }
+h1 { font-size: 1.5rem; }
+h2 { font-size: 1.25rem; }
+h3 { font-size: 1.05rem; }
+p  { margin: 0 0 .75rem; }
+
+a { color: var(--primary); text-decoration: none; }
+a:not(.btn):hover { text-decoration: underline; }
+.btn { text-decoration: none; }
+button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+.container {
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: calc(16px + var(--safe-top)) 16px calc(32px + var(--safe-bottom));
+}
+.container--wide { max-width: 1180px; }
+
+.stack     { display: flex; flex-direction: column; gap: 12px; }
+.stack-lg  { display: flex; flex-direction: column; gap: 20px; }
+.row       { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.row-end   { display: flex; gap: 10px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+.spacer    { flex: 1; }
+
+.grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 560px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 720px) { .grid-4 { grid-template-columns: repeat(4, 1fr); } }
+@media (min-width: 560px) and (max-width: 719px) { .grid-4 { grid-template-columns: 1fr 1fr; } }
+.card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 16px;
+}
+.card--pad-lg { padding: 24px; }
+.card--clickable { cursor: pointer; transition: transform .12s ease, box-shadow .12s ease; }
+.card--clickable:active { transform: scale(.985); }
+@media (hover: hover) {
+  .card--clickable:hover { box-shadow: var(--shadow); }
+}
+
+.stat        { text-align: center; }
+.stat__value { font-size: 1.75rem; font-weight: 800; letter-spacing: -.02em; }
+.stat__label { font-size: .8rem; color: var(--text-muted); }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 12px 20px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: var(--bg-subtle);
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color .15s ease, transform .1s ease, opacity .15s ease;
+  user-select: none;
+}
+.btn:active:not(:disabled) { transform: scale(.97); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+
+.btn--primary { background: var(--primary); color: var(--on-primary); }
+@media (hover: hover) { .btn--primary:hover:not(:disabled) { background: var(--primary-hover); } }
+
+.btn--ghost   { background: transparent; border-color: var(--border); }
+.btn--success { background: var(--success); color: #fff; }
+.btn--danger  { background: var(--danger-soft); color: var(--danger); border-color: var(--danger); }
+.btn--block   { width: 100%; }
+.btn--sm      { min-height: 38px; padding: 8px 14px; font-size: .9rem; }
+.btn--lg      { min-height: 56px; font-size: 1.05rem; }
+.label {
+  display: block;
+  font-size: .85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.input, .textarea, .select {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 16px;
+  font-family: inherit;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.input:focus, .textarea:focus, .select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+.textarea { min-height: 90px; resize: vertical; line-height: 1.45; }
+
+.field { margin-bottom: 14px; }
+.progress {
+  height: 10px;
+  background: var(--bg-subtle);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.progress__bar {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 999px;
+  transition: width .45s cubic-bezier(.4, 0, .2, 1);
+}
+.progress__bar--success { background: var(--success); }
+
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: .75rem;
+  font-weight: 700;
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.badge--new     { background: var(--primary-soft); color: var(--primary); }
+.badge--weak    { background: var(--danger-soft);  color: var(--danger); }
+.badge--learn   { background: var(--warning-soft); color: var(--warning); }
+.badge--known   { background: var(--success-soft); color: var(--success); }
+.answer-correct {
+  border-color: var(--success);
+  background: var(--success-soft);
+  animation: pop .25s ease;
+}
+.answer-wrong {
+  border-color: var(--danger);
+  background: var(--danger-soft);
+  animation: shake .3s ease;
+}
+.answer-almost {
+  border-color: var(--warning);
+  background: var(--warning-soft);
+  animation: pop .25s ease;
+}
+@keyframes pop   { from { transform: scale(.97); opacity: .6; } to { transform: scale(1); opacity: 1; } }
+@keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+@keyframes fade  { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+.muted      { color: var(--text-muted); }
+.small      { font-size: .85rem; }
+.center     { text-align: center; }
+.hr         { height: 1px; background: var(--border); border: 0; margin: 16px 0; }
+.truncate   { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 12, 16, .55);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 50;
+  animation: fade .15s ease;
+}
+
+.modal {
+  background: var(--bg-elevated);
+  width: 100%;
+  max-width: 560px;
+  max-height: 92vh;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 20px 20px 0 0;
+  padding: 20px 18px calc(20px + var(--safe-bottom));
+  box-shadow: var(--shadow);
+  animation: slide-up .22s cubic-bezier(.32, .72, 0, 1);
+}
+@media (min-width: 560px) {
+  .modal-overlay { align-items: center; padding: 20px; }
+  .modal { border-radius: var(--radius); padding-bottom: 20px; }
+}
+
+.modal__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.modal__title { font-size: 1.15rem; font-weight: 700; margin: 0; }
+
+.modal__close {
+  margin-left: auto;
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+@keyframes slide-up { from { transform: translateY(24px); opacity: .4; } to { transform: none; opacity: 1; } }
+.fab {
+  position: fixed;
+  right: 16px;
+  bottom: calc(16px + var(--safe-bottom));
+  z-index: 30;
+  width: 56px;
+  height: 56px;
+  min-height: 56px;
+  padding: 0;
+  border-radius: 50%;
+  box-shadow: 0 6px 20px rgba(79, 70, 229, .45);
+}
+.fab__icon {
+  display: block;
+  font-size: 30px;
+  line-height: 1;
+  font-weight: 400;
+  transform: translateY(-1px);
+}
+.flashcard {
+  min-height: 230px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 8px;
+}
+
+.flashcard__answer {
+  width: 100%;
+  text-align: left;
+  border-top: 1px solid var(--border);
+  margin-top: 10px;
+  padding-top: 14px;
+  animation: fade .2s ease;
+}
+
+.answer-row { display: flex; gap: 10px; margin-bottom: 10px; }
+.answer-row:last-child { margin-bottom: 0; }
+.answer-row__label {
+  color: var(--text-muted);
+  font-size: .85rem;
+  min-width: 120px;
+  flex-shrink: 0;
+}
+.answer-row__value { font-weight: 600; }
+
+@media (max-width: 420px) {
+  .answer-row { flex-direction: column; gap: 2px; }
+  .answer-row__label { min-width: 0; }
+}
+.option {
+  width: 100%;
+  min-height: 58px;
+  justify-content: flex-start;
+  text-align: left;
+  gap: 12px;
+  white-space: normal;
+  line-height: 1.35;
+}
+
+.option__key {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  font-size: .78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.option--correct { border-color: var(--success); background: var(--success-soft); }
+.option--wrong   { border-color: var(--danger);  background: var(--danger-soft); }
+.option--muted   { opacity: .5; }
+
+.quiz-prompt {
+  background: var(--bg-subtle);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+.quiz-prompt__label { font-size: .78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
+.quiz-prompt__value { font-size: 1.25rem; font-weight: 700; line-height: 1.3; margin-top: 4px; }
+.offline-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 60;
+  background: var(--warning);
+  color: #fff;
+  text-align: center;
+  font-size: .85rem;
+  font-weight: 600;
+  padding: calc(8px + var(--safe-top)) 12px 8px;
+  animation: fade .2s ease;
+}
+.burger {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  flex: none;
+  width: 46px;
+  height: 46px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+  transition: background-color .15s ease;
+}
+.burger span {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background: var(--text);
+  border-radius: 2px;
+}
+@media (hover: hover) { .burger:hover { background: var(--bg-subtle); } }
+.burger:active { transform: scale(.95); }
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(10, 12, 16, .45);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s ease;
+}
+.drawer-overlay.is-open { opacity: 1; pointer-events: auto; }
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 41;
+  width: min(320px, 86vw);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-elevated);
+  border-left: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  padding: calc(16px + var(--safe-top)) 14px calc(20px + var(--safe-bottom));
+  transform: translateX(100%);
+  transition: transform .22s cubic-bezier(.4, 0, .2, 1);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.drawer.is-open { transform: none; }
+
+.drawer__head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.drawer__avatar {
+  flex: none;
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--primary); color: var(--on-primary);
+  font-weight: 800; font-size: 1.05rem;
+}
+.drawer__user  { min-width: 0; }
+.drawer__email {
+  font-weight: 700; font-size: .92rem;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.drawer__label {
+  font-size: .72rem; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--text-muted);
+  margin: 16px 0 6px 12px;
+}
+
+.drawer__nav { display: flex; flex-direction: column; gap: 2px; }
+.drawer__item {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 0; border-radius: var(--radius-sm);
+  background: transparent; color: var(--text);
+  font: inherit; font-weight: 600; font-size: .98rem;
+  text-align: left; text-decoration: none;
+  cursor: pointer;
+}
+@media (hover: hover) { .drawer__item:hover { background: var(--bg-subtle); } }
+.drawer__item:active { background: var(--bg-subtle); }
+.drawer__item.is-active { background: var(--primary-soft); color: var(--primary); }
+.drawer__item--danger { color: var(--danger); }
+.drawer__icon { flex: none; width: 26px; text-align: center; font-size: 1.15rem; }
+body.no-scroll { overflow: hidden; }
 .section {
   margin: 26px 0 12px;
 }
@@ -21,8 +497,6 @@
   font-size: .86rem;
   color: var(--text-muted);
 }
-
-/* ---------- 2. ШАПКА ГЛАВНОГО ЭКРАНА (hero) ------------------------------ */
 .hero {
   position: relative;
   overflow: hidden;
@@ -45,8 +519,6 @@
   line-height: 1.2;
 }
 .hero__note { margin: 8px 0 0; font-size: .88rem; color: var(--text-muted); }
-
-/* Кружок с «живым» смайликом */
 .avatar-bubble {
   position: relative;
   flex: none;
@@ -62,7 +534,7 @@
   animation: bubbleFloat 3.6s ease-in-out infinite;
   user-select: none;
 }
-.avatar-bubble::after {           /* мягкое свечение-пульс */
+.avatar-bubble::after {
   content: '';
   position: absolute;
   inset: -6px;
@@ -86,20 +558,7 @@
   from { transform: scale(.3) rotate(-25deg); opacity: 0; }
   to   { transform: scale(1) rotate(0); opacity: 1; }
 }
-
-/* ---------- 3. КОЛЬЦО ПРОГРЕССА ----------------------------------------- */
 .ring { flex: none; display: block; }
-.ring__track { stroke: var(--bg-subtle); }
-.ring__bar {
-  stroke: var(--primary);
-  stroke-linecap: round;
-  transition: stroke-dashoffset 1s cubic-bezier(.2,.8,.2,1);
-}
-.ring__bar--done { stroke: var(--success); }
-.ring__text { font-size: 15px; font-weight: 800; fill: var(--text); }
-.ring__sub  { font-size: 7px; font-weight: 700; fill: var(--text-muted); letter-spacing: .08em; }
-
-/* ---------- 4. КЛИКАБЕЛЬНЫЕ ПЛИТКИ СТАТИСТИКИ --------------------------- */
 .tile {
   position: relative;
   display: block;
@@ -135,8 +594,6 @@
   transform: translateX(-3px);
   transition: opacity .15s ease, transform .15s ease;
 }
-
-/* ---------- 5. КРУПНЫЕ КНОПКИ-ДЕЙСТВИЯ --------------------------------- */
 .action {
   display: flex;
   align-items: center;
@@ -189,8 +646,6 @@
   background: var(--danger-soft); color: var(--danger);
 }
 .pill--soft { background: var(--primary-soft); color: var(--primary); }
-
-/* ---------- 6. ПОЯВЛЕНИЕ БЛОКОВ ПО ОЧЕРЕДИ ------------------------------ */
 .stagger > * {
   opacity: 0;
   animation: riseIn .45s cubic-bezier(.2,.8,.2,1) forwards;
@@ -207,8 +662,6 @@
   from { opacity: 0; transform: translateY(14px) scale(.98); }
   to   { opacity: 1; transform: none; }
 }
-
-/* ---------- 7. БРИФИНГ ПЕРЕД ТРЕНИРОВКОЙ -------------------------------- */
 .brief__head { text-align: center; padding: 6px 0 2px; }
 .brief__emoji {
   font-size: 3rem;
@@ -228,8 +681,6 @@
   background: var(--primary-soft); color: var(--primary);
   font-size: .76rem; font-weight: 800;
 }
-
-/* ---------- 8. НАСТРОЙКИ: ПЕРЕКЛЮЧАТЕЛИ -------------------------------- */
 .setting { margin-bottom: 16px; }
 .setting:last-child { margin-bottom: 0; }
 .setting__title { font-weight: 700; font-size: .94rem; }
@@ -291,8 +742,6 @@
 }
 .switch.is-on { background: var(--primary); border-color: var(--primary); }
 .switch.is-on::after { transform: translateX(18px); }
-
-/* ---------- 9. КАРТОЧКА СО СВАЙПОМ ------------------------------------- */
 .swipe-area { position: relative; touch-action: pan-y; }
 
 .swipe-card {
@@ -317,8 +766,6 @@
   45%  { transform: perspective(900px) rotateX(-11deg) scale(.99); }
   100% { transform: perspective(900px) rotateX(0); }
 }
-
-/* Штампы «ЗНАЮ» / «НЕ ЗНАЮ», проявляются по мере сдвига */
 .stamp {
   position: absolute;
   top: 14px;
@@ -332,8 +779,6 @@
 }
 .stamp--yes { right: 14px; transform: rotate(12deg);  color: var(--success); border-color: var(--success); background: var(--success-soft); }
 .stamp--no  { left: 14px;  transform: rotate(-12deg); color: var(--danger);  border-color: var(--danger);  background: var(--danger-soft); }
-
-/* Подложка-подсказка под карточкой */
 .swipe-hints {
   display: flex; justify-content: space-between;
   margin-top: 12px;
@@ -356,8 +801,6 @@
 
 .flash-name { font-size: 1.5rem; font-weight: 800; text-align: center; line-height: 1.25; }
 .flash-sub  { text-align: center; color: var(--text-muted); font-size: .88rem; margin-top: 10px; }
-
-/* ---------- 10. ЭКРАН ИТОГОВ: САЛЮТ ------------------------------------ */
 .celebrate { position: relative; }
 .confetti {
   position: absolute;
@@ -371,8 +814,6 @@
   100% { transform: translate(var(--dx, 0), 190px) rotate(360deg); opacity: 0; }
 }
 .big-emoji { font-size: 3.2rem; display: inline-block; animation: faceIn .6s cubic-bezier(.2,.9,.3,1.5); }
-
-/* ---------- 11. СПИСОК «РАЗБОР» ---------------------------------------- */
 .irow {
   display: block;
   width: 100%;
@@ -394,8 +835,6 @@
 .bar-mini { height: 6px; border-radius: 999px; background: var(--bg-subtle); overflow: hidden; margin-top: 8px; }
 .bar-mini__fill { height: 100%; border-radius: 999px; transition: width .8s cubic-bezier(.2,.8,.2,1); }
 .irow__more { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); animation: fade .2s ease; }
-
-/* ---------- 12. УВАЖАЕМ НАСТРОЙКУ «МЕНЬШЕ ДВИЖЕНИЯ» -------------------- */
 @media (prefers-reduced-motion: reduce) {
   .avatar-bubble,
   .avatar-bubble::after,
@@ -404,10 +843,7 @@
   .big-emoji,
   .stagger > * { animation: none !important; }
   .stagger > * { opacity: 1 !important; }
-  .ring__bar, .bar-mini__fill { transition: none !important; }
 }
-
-/* ---------- 13. ФОКУС НА СТРОКАХ РАЗБОРА (клавиатура) ------------------ */
 .irow:focus-visible,
 .tile:focus-visible,
 .action:focus-visible,
@@ -416,16 +852,6 @@
   outline: 3px solid var(--primary);
   outline-offset: 2px;
 }
-
-/* ============================================================================
-   ЧАСТЬ ВТОРАЯ (Этап 19): убираем подчёркивания, оживляем вход,
-   шкала и график вместо круговой диаграммы, развилка обучения.
-   ============================================================================ */
-
-/* ---------- 14. НИКАКИХ ПОДЧЁРКИВАНИЙ И ВЫДЕЛЕНИЙ НА КНОПКАХ ------------ */
-/* В index.css есть правило a:not(.btn):hover { text-decoration: underline },
-   из-за него при наведении подчёркивались плитки, карточки и пункты меню.
-   Здесь отменяем это для всего, что выглядит как кнопка. */
 a.tile, a.tile:hover, a.tile:focus,
 a.action, a.action:hover, a.action:focus,
 a.drawer__item, a.drawer__item:hover, a.drawer__item:focus,
@@ -437,30 +863,20 @@ a.card, a.card:hover, a.card:focus,
 a.chip, a.chip:hover {
   text-decoration: none !important;
 }
-
-/* Текст на кнопках больше не выделяется синим при клике и перетаскивании */
 .tile, .action, .irow, .start-btn, .pick__card, .drawer__item, .drawer__account,
 .seg__btn, .switch-row, .swipe-card, .chart__col, .fold__head, .tabs__btn,
 .legend__item, .steps__num, .stamp, .avatar-bubble {
   -webkit-user-select: none;
   user-select: none;
 }
-
-/* Ссылка-текст, которая должна оставаться скромной */
 .link-quiet { color: var(--text-muted); font-size: .88rem; }
 .link-quiet:hover { color: var(--primary); }
-
-/* Ссылка, сделанная из кнопки (внутри текста) */
 .link-btn {
   border: 0; background: none; padding: 0;
   font: inherit; color: var(--primary); font-weight: 700; cursor: pointer;
 }
 .link-btn:hover { text-decoration: underline; }
-
-/* ---------- 15. ЭКРАН ВХОДА -------------------------------------------- */
 .auth { position: relative; min-height: 100vh; overflow-x: hidden; }
-
-/* Живой фон из трёх пятен */
 .auth__bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
 .blob {
   position: absolute;
@@ -488,8 +904,6 @@ a.chip, a.chip:hover {
   33%      { transform: translate(-6vmax, 4vmax); }
   66%      { transform: translate(5vmax, -6vmax); }
 }
-
-/* Плавающие подписи-«сотрудники» */
 .auth__floaters { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
 .floater {
   position: absolute;
@@ -512,8 +926,6 @@ a.chip, a.chip:hover {
   50%      { transform: translateY(-18px) rotate(1.5deg); }
 }
 @media (max-width: 1180px) { .auth__floaters { display: none; } }
-
-/* Раскладка */
 .auth__wrap {
   position: relative;
   z-index: 1;
@@ -523,7 +935,7 @@ a.chip, a.chip:hover {
   display: grid;
   gap: 32px;
 }
-.auth__formside { order: -1; }                 /* на телефоне форма сверху */
+.auth__formside { order: -1; }
 @media (min-width: 980px) {
   .auth__wrap { grid-template-columns: 1.05fr .95fr; gap: 48px; align-items: start; padding-top: 64px; }
   .auth__formside { order: 0; position: sticky; top: 40px; }
@@ -571,25 +983,19 @@ a.chip, a.chip:hover {
 
 .auth__how { margin-top: 30px; }
 .auth__note { margin-top: 24px; }
-
-/* Карточка с формой */
 .auth__card {
   background: var(--bg-elevated);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: 22px;
-  animation: riseIn .5s cubic-bezier(.2,.8,.2,1);
 }
-.auth__form { animation: formSlide .35s ease; }
 @keyframes formSlide {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: none; }
 }
 .auth__scroll-hint { margin-top: 14px; }
 @media (min-width: 980px) { .auth__scroll-hint { display: none; } }
-
-/* Вкладки «Вход / Регистрация» */
 .tabs { position: relative; display: flex; padding: 4px; background: var(--bg-subtle); border-radius: 12px; }
 .tabs__slider {
   position: absolute;
@@ -612,23 +1018,6 @@ a.chip, a.chip:hover {
   transition: color .2s ease;
 }
 .tabs__btn.is-on { color: var(--text); }
-
-/* Поле пароля с глазом */
-.input-wrap { position: relative; }
-.input-wrap .input { padding-right: 46px; }
-.input-eye {
-  position: absolute;
-  right: 6px; top: 50%;
-  transform: translateY(-50%);
-  width: 34px; height: 34px;
-  border: 0; border-radius: 8px;
-  background: transparent;
-  font-size: 1rem;
-  cursor: pointer;
-}
-.input-eye:hover { background: var(--bg-subtle); }
-
-/* Кнопка «занята» и встряска при ошибке */
 .btn.is-busy { position: relative; opacity: .85; }
 .shake { animation: shake .35s ease; }
 @keyframes shake {
@@ -636,16 +1025,12 @@ a.chip, a.chip:hover {
   25%      { transform: translateX(-6px); }
   75%      { transform: translateX(6px); }
 }
-
-/* Появление блоков при прокрутке */
 .reveal {
   opacity: 0;
   transform: translateY(22px);
   transition: opacity .6s ease, transform .6s cubic-bezier(.2,.8,.2,1);
 }
 .reveal.is-in { opacity: 1; transform: none; }
-
-/* ---------- 16. БОЛЬШАЯ КНОПКА «НАЧАТЬ ОБУЧЕНИЕ» ----------------------- */
 .start-btn {
   position: relative;
   overflow: hidden;
@@ -665,7 +1050,6 @@ a.chip, a.chip:hover {
   .start-btn:hover .start-btn__chev { transform: translateX(6px); }
   .start-btn:hover .start-btn__icon { transform: scale(1.12) rotate(-8deg); }
 }
-/* Блик, который медленно пробегает по кнопке */
 .start-btn__glow {
   position: absolute;
   top: -60%; left: -30%;
@@ -693,8 +1077,6 @@ a.chip, a.chip:hover {
 .start-btn__title { display: block; font-size: 1.15rem; font-weight: 800; }
 .start-btn__desc { display: block; font-size: .85rem; color: rgba(255,255,255,.85); margin-top: 3px; }
 .start-btn__chev { flex: none; font-size: 1.2rem; transition: transform .18s ease; }
-
-/* ---------- 17. РАЗВИЛКА: ДВЕ БОЛЬШИЕ ПЛИТКИ --------------------------- */
 .pick { display: grid; gap: 14px; grid-template-columns: 1fr; }
 @media (min-width: 700px) { .pick { grid-template-columns: 1fr 1fr; } }
 
@@ -752,8 +1134,6 @@ a.chip, a.chip:hover {
   font-weight: 700; font-size: .9rem;
   transition: background-color .2s ease, color .2s ease;
 }
-
-/* ---------- 18. ШКАЛА ПРОГРЕССА ---------------------------------------- */
 .scale {
   display: flex;
   height: 16px;
@@ -776,8 +1156,6 @@ a.chip, a.chip:hover {
 .legend__num { font-weight: 800; }
 .legend__label { font-size: .84rem; color: var(--text-muted); }
 @media (hover: hover) { .legend__item:hover .legend__label { color: var(--primary); } }
-
-/* ---------- 19. ГРАФИК ПО ДНЯМ ----------------------------------------- */
 .chart {
   display: flex;
   align-items: flex-end;
@@ -828,8 +1206,6 @@ a.chip, a.chip:hover {
   font-weight: 800;
   white-space: nowrap;
 }
-
-/* ---------- 20. СВОРАЧИВАЮЩИЙСЯ БЛОК ----------------------------------- */
 .fold { padding: 0; overflow: hidden; }
 .fold__head {
   display: flex;
@@ -851,11 +1227,7 @@ a.chip, a.chip:hover {
 .fold__chev { flex: none; font-size: 1.2rem; color: var(--text-muted); transition: transform .25s ease; }
 .fold__chev.is-open { transform: rotate(180deg); }
 .fold__body { padding: 4px 16px 18px; animation: fade .25s ease; }
-
-/* Маленький вариант «живого» кружка (для широких экранов) */
 .avatar-bubble--sm { width: 58px; height: 58px; font-size: 1.6rem; }
-
-/* ---------- 21. МЕНЮ: ПЛАШКА АККАУНТА ---------------------------------- */
 .drawer__account {
   display: flex;
   align-items: center;
@@ -880,42 +1252,6 @@ a.chip, a.chip:hover {
   .blob, .floater, .start-btn__glow, .pick__icon, .auth__logo, .chart__bar { animation: none !important; }
   .reveal { opacity: 1 !important; transform: none !important; }
 }
-
-/* ============================================================================
-   ЧАСТЬ ТРЕТЬЯ (Этап 20): обезьянка у пароля, галочка «показать пароль»,
-   коды приглашения.
-   ============================================================================ */
-
-/* ---------- 22. ОБЕЗЬЯНКА У ПОЛЯ ПАРОЛЯ -------------------------------- */
-/*  Осталось только самое нужное: через пару секунд после загрузки она
-    выглядывает из-за поля пароля, закрывает глаза при вводе и полностью
-    уезжает вниз, когда пароль показывают или нажимают «Войти».
-    Картинки: public/monkey/peek.webp и hide.webp                          */
-
-.pw { position: relative; }
-.pw__input { position: relative; z-index: 2; }   /* поле закрывает её собой */
-
-.peek {
-  position: absolute;
-  right: 6px;
-  bottom: calc(100% - 8px);        /* низ картинки заходит под верхний край поля */
-  width: clamp(72px, 16vw, 96px);
-  overflow: hidden;                /* всё, что ниже, скрыто за полем */
-  z-index: 1;
-  display: block;
-  line-height: 0;
-  cursor: pointer;
-}
-.peek__img {
-  display: block;
-  width: 100%;
-  height: auto;
-  transform: translateY(115%);     /* спрятана: не торчит ни один пиксель */
-  transition: transform .45s cubic-bezier(.34,1.2,.5,1);
-}
-.peek.is-in .peek__img { transform: translateY(0); }   /* показалась целиком */
-
-/* ---------- 23. ГАЛОЧКА «ПОКАЗАТЬ ПАРОЛЬ» ------------------------------ */
 .check {
   display: inline-flex;
   align-items: center;
@@ -951,8 +1287,6 @@ a.chip, a.chip:hover {
 .check input:focus-visible + .check__box { outline: 3px solid var(--primary); outline-offset: 2px; }
 .check__text { color: var(--text-muted); transition: color .18s ease; }
 .check input:checked ~ .check__text { color: var(--text); }
-
-/* ---------- 24. КОДЫ ПРИГЛАШЕНИЯ --------------------------------------- */
 .code-box__value {
   font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
   font-size: clamp(1.7rem, 8vw, 2.5rem);
@@ -964,7 +1298,7 @@ a.chip, a.chip:hover {
   border: 2px dashed var(--border);
   animation: codeIn .35s cubic-bezier(.2,.9,.3,1.4);
   -webkit-user-select: all;
-  user-select: all;                     /* по двойному клику выделяется весь код */
+  user-select: all;
 }
 @keyframes codeIn {
   from { opacity: 0; transform: scale(.9); }
@@ -989,44 +1323,6 @@ a.chip, a.chip:hover {
 
 @media (prefers-reduced-motion: reduce) {
   .code-box__value { animation: none !important; }
-  .peek__img { transition: none; }
-}
-
-/* ---------- 25. ПРОФИЛИ СПИСКОВ ---------------------------------------- */
-.active-list {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  border-color: var(--primary);
-  background: linear-gradient(120deg, var(--primary-soft) 0%, var(--bg-elevated) 70%);
-}
-.active-list__emoji { font-size: 2rem; flex: none; }
-
-.list-card { transition: border-color .15s ease; }
-.list-card.is-active { border-color: var(--primary); }
-
-.list-card__main {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--text);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-.list-card__main:disabled { cursor: default; }
-.list-card__emoji { font-size: 1.7rem; flex: none; }
-.list-card__name { font-weight: 700; display: block; }
-.list-card__acts {
-  gap: 8px;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px dashed var(--border);
-  flex-wrap: wrap;
 }
 
 .emoji-row { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -1041,8 +1337,6 @@ a.chip, a.chip:hover {
 }
 .emoji-btn:hover { transform: translateY(-2px); }
 .emoji-btn.is-on { border-color: var(--primary); background: var(--primary-soft); }
-
-/* Плашка активного профиля на главном экране */
 .list-chip {
   display: inline-flex;
   align-items: center;
@@ -1059,3 +1353,165 @@ a.chip, a.chip:hover {
 }
 @media (hover: hover) { .list-chip:hover { border-color: var(--primary); } }
 .list-chip__go { color: var(--text-muted); }
+.guide {
+  border: 1px solid var(--primary);
+  background: linear-gradient(150deg, var(--primary-soft) 0%, var(--bg-elevated) 65%);
+}
+.guide__top { display: flex; align-items: flex-start; gap: 12px; }
+.guide__emoji { font-size: 1.7rem; line-height: 1; flex: none; }
+.guide__title { margin: 0; font-size: 1.05rem; }
+.guide__sub { margin: 4px 0 0; }
+.guide__close {
+  flex: none;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 8px;
+}
+@media (hover: hover) { .guide__close:hover { color: var(--text); } }
+
+.guide__steps { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 10px; }
+.guide__step {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+}
+.guide__step.is-done { opacity: .6; }
+.guide__num {
+  flex: none;
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: .82rem; font-weight: 800;
+  background: var(--primary); color: #fff;
+}
+.guide__step.is-done .guide__num { background: var(--success); }
+.guide__step-title { font-weight: 700; display: block; }
+.guide__step-text  { display: block; font-size: .86rem; color: var(--text-muted); margin-top: 2px; }
+.guide__step-link  { display: inline-block; margin-top: 6px; font-size: .86rem; font-weight: 700; }
+.lnow {
+  display: grid;
+  gap: 12px;
+  border: 2px solid var(--primary);
+  background: linear-gradient(140deg, var(--primary-soft) 0%, var(--bg-elevated) 60%);
+}
+.lnow__row { display: flex; align-items: center; gap: 14px; }
+.lnow__emoji {
+  font-size: 2rem; flex: none;
+  width: 54px; height: 54px;
+  display: grid; place-items: center;
+  border-radius: 16px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+}
+.lnow__label { font-size: .74rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--primary); }
+.lnow__name { font-size: 1.15rem; font-weight: 800; display: block; }
+.lcard { padding: 0; overflow: hidden; }
+.lcard__pick {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 14px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color .15s ease;
+}
+.lcard__pick:disabled { cursor: default; }
+@media (hover: hover) {
+  .lcard__pick:not(:disabled):hover { background: var(--bg-subtle); }
+}
+.lcard.is-active { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+.lcard__radio {
+  flex: none;
+  width: 22px; height: 22px;
+  margin-top: 2px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  display: grid; place-items: center;
+  transition: border-color .15s ease, background-color .15s ease;
+}
+.lcard__radio::after {
+  content: '';
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: #fff;
+  transform: scale(0);
+  transition: transform .18s cubic-bezier(.2, 1.4, .4, 1);
+}
+.lcard.is-active .lcard__radio { border-color: var(--primary); background: var(--primary); }
+.lcard.is-active .lcard__radio::after { transform: scale(1); }
+
+.lcard__emoji { font-size: 1.5rem; flex: none; line-height: 1.2; }
+.lcard__name { font-weight: 700; }
+.lcard__meta { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 6px; font-size: .8rem; color: var(--text-muted); }
+.lcard__bar { margin-top: 8px; }
+.lcard__acts {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  padding: 12px 14px;
+  border-top: 1px dashed var(--border);
+  background: var(--bg-subtle);
+}
+.lcard__more {
+  width: 100%;
+  border: 0; border-top: 1px dashed var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit; font-size: .84rem; font-weight: 700;
+  padding: 9px;
+  cursor: pointer;
+}
+@media (hover: hover) { .lcard__more:hover { color: var(--text); background: var(--bg-subtle); } }
+span.progress { display: block; }
+span.progress__bar { display: block; }
+.lflash { animation: lflash .5s ease-out; }
+@keyframes lflash {
+  from { transform: scale(.985); opacity: .5; }
+  to   { transform: none;        opacity: 1;  }
+}
+.drawer__list {
+  display: flex; align-items: center; gap: 10px;
+  margin: 4px 0 14px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-subtle);
+  color: var(--text);
+  text-decoration: none;
+}
+.drawer__list.is-active { border-color: var(--primary); }
+.drawer__list-emoji { font-size: 1.3rem; flex: none; }
+.drawer__list-label { display: block; font-size: .72rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--text-muted); }
+.drawer__list-name { display: block; font-weight: 700; }
+.list-picker { display: grid; gap: 8px; }
+.list-picker__item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 12px;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .15s ease, background-color .15s ease;
+}
+.list-picker__item.is-on { border-color: var(--primary); background: var(--primary-soft); }
+.list-picker__item:disabled { opacity: .5; cursor: not-allowed; }
+.list-picker__emoji { font-size: 1.3rem; flex: none; }
+.list-picker__name { font-weight: 700; display: block; }
+.list-picker__sub { display: block; font-size: .8rem; color: var(--text-muted); }
+.list-picker__tick { flex: none; color: var(--primary); font-weight: 800; }
+.no-scroll { overflow: hidden; }
+.badge--learning { background: var(--warning-soft); color: var(--warning); }

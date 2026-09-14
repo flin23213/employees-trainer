@@ -4,6 +4,18 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 
+    <script>
+      // Apply the saved theme before CSS and the first browser paint.
+      (function () {
+        var theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        try {
+          var saved = localStorage.getItem('theme');
+          if (saved === 'light' || saved === 'dark') theme = saved;
+        } catch (_) {}
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
+    <style>html{background:#f5f6f8;color-scheme:light}html[data-theme="dark"]{background:#0f1115;color-scheme:dark}</style>
     <title>Тренажёр сотрудников</title>
     <meta name="description" content="Личный тренажёр: ФИО, должности и обязанности сотрудников офиса" />
 

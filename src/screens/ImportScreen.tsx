@@ -1,16 +1,18 @@
 // Путь: src/screens/ImportScreen.tsx
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
 import { insertEmployees, useEmployees, type ImportResult } from '../lib/employees'
 import { downloadTemplate, parseFile, revalidate, type ParsedRow } from '../lib/parseEmployees'
 import type { EmployeeInput } from '../lib/employees'
+import { parsePhotoText } from '../lib/parsePhotoText'
 
 const orNull = (s: string): string | null => (s.trim() === '' ? null : s.trim())
 
 export default function ImportScreen() {
   const { list, reload } = useEmployees()
   const fileInput = useRef<HTMLInputElement>(null)
+  const operation = useRef<AbortController | null>(null)
 
   const [fileName, setFileName] = useState('')
   const [rows, setRows] = useState<ParsedRow[]>([])
@@ -19,24 +21,54 @@ export default function ImportScreen() {
   const [error, setError] = useState<string | null>(null)
   const [importing, setImporting] = useState(false)
   const [result, setResult] = useState<ImportResult | null>(null)
+  const [progress, setProgress] = useState('')
+  const [photoText, setPhotoText] = useState<string | null>(null)
+
+  useEffect(() => () => operation.current?.abort(), [])
 
   const existingNames = useMemo(() => list.map((e) => e.full_name), [list])
 
   async function handleFile(file: File) {
+    if (importing) return
+    operation.current?.abort()
+    const controller = new AbortController()
+    operation.current = controller
     setError(null)
     setResult(null)
+    setRows([])
+    setNotes([])
+    setPhotoText(null)
+    setProgress('Читаю файл…')
     setParsing(true)
     setFileName(file.name)
     try {
-      const parsed = await parseFile(file)
+      const photo = /\.(png|jpe?g|webp|bmp)$/i.test(file.name) || /^image\/(png|jpeg|webp|bmp)$/.test(file.type)
+      let parsed
+      if (photo) {
+        const { recognizePhoto } = await import('../lib/recognizePhoto')
+        controller.signal.throwIfAborted()
+        const text = await recognizePhoto(file, controller.signal, setProgress)
+        controller.signal.throwIfAborted()
+        setPhotoText(text)
+        parsed = parsePhotoText(text)
+        parsed.notes.unshift('Проверьте ФИО и должности: распознавание фотографии может ошибаться.')
+      } else {
+        if (!/\.(xlsx|xls|xlsm|csv|txt)$/i.test(file.name)) throw new Error('Выберите таблицу, текст или фото JPG, PNG, WebP, BMP.')
+        parsed = await parseFile(file)
+      }
+      controller.signal.throwIfAborted()
       setRows(revalidate(parsed.rows, existingNames))
       setNotes(parsed.notes)
     } catch (e) {
+      if (controller.signal.aborted) return
       setError('Не удалось прочитать файл: ' + (e instanceof Error ? e.message : String(e)))
       setRows([])
       setNotes([])
     } finally {
-      setParsing(false)
+      if (operation.current === controller) {
+        setParsing(false)
+        setProgress('')
+      }
     }
   }
 
@@ -75,6 +107,7 @@ export default function ImportScreen() {
       setRows([])
       setNotes([])
       setFileName('')
+      setPhotoText(null)
       reload()
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
@@ -111,30 +144,53 @@ export default function ImportScreen() {
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>1. Выберите файл</h3>
         <p className="small muted">
-          Поддерживаются <strong>.xlsx</strong>, <strong>.xls</strong>, <strong>.csv</strong> и <strong>.txt</strong>.
+          Поддерживаются Excel, CSV, TXT и фотографии списков: JPG, PNG, WebP, BMP (до 15 МБ).
           Обязательны только ФИО и должность, остальное по желанию.
         </p>
+        <p className="small muted">Фото обрабатывается на вашем устройстве. При первом запуске потребуется интернет для загрузки распознавания. Снимайте печатный список ровно, при хорошем освещении. Перед сохранением можно исправить результат.</p>
 
         <input
           ref={fileInput}
           type="file"
-          accept=".xlsx,.xls,.xlsm,.csv,.txt"
+          accept=".xlsx,.xls,.xlsm,.csv,.txt,.jpg,.jpeg,.png,.webp,.bmp"
           style={{ display: 'none' }}
           onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = '' }}
         />
 
         <div className="row">
-          <button className="btn btn--primary" onClick={() => fileInput.current?.click()} disabled={parsing}>
+          <button className="btn btn--primary" onClick={() => fileInput.current?.click()} disabled={parsing || importing}>
             📂 {parsing ? 'Читаю файл...' : 'Выбрать файл'}
           </button>
-          <button className="btn btn--ghost" onClick={downloadTemplate}>
+          <button className="btn btn--ghost" onClick={() => { downloadTemplate().catch(() => setError('Не удалось скачать шаблон. Проверьте интернет.')) }}>
             ⬇ Скачать шаблон Excel
           </button>
         </div>
+        {parsing && <div className="row" role="status" style={{ marginTop: 12 }}>
+          <span className="small">{progress}</span>
+          <button className="btn btn--ghost btn--sm" onClick={() => {
+            operation.current?.abort()
+            operation.current = null
+            setParsing(false)
+            setProgress('')
+            setFileName('')
+          }}>Отменить</button>
+        </div>}
 
         {fileName && <p className="small muted" style={{ marginTop: 10 }}>Файл: {fileName}</p>}
         {error && <div className="card answer-wrong small" style={{ marginTop: 12 }}>{error}</div>}
       </div>
+
+      {photoText !== null && !parsing && <details className="card" style={{ marginBottom: 16 }}>
+        <summary>Распознанный текст — исправить разбиение строк</summary>
+        <label className="label" htmlFor="photo-text">Один сотрудник в строке: ФИО | Должность | Отдел</label>
+        <textarea id="photo-text" className="input" rows={8} value={photoText} disabled={importing}
+          onChange={event => setPhotoText(event.target.value)} />
+        <button className="btn btn--ghost" disabled={importing} onClick={() => {
+          const parsed = parsePhotoText(photoText)
+          setRows(revalidate(parsed.rows, existingNames))
+          setNotes(parsed.notes)
+        }}>Обновить предпросмотр</button>
+      </details>}
 
       {/* --- Шаг 2: что распознали --- */}
       {rows.length > 0 && (
@@ -213,7 +269,7 @@ export default function ImportScreen() {
             <button
               className="btn btn--primary btn--block btn--lg"
               onClick={handleImport}
-              disabled={importing || ready.length === 0}
+              disabled={importing || parsing || ready.length === 0}
             >
               {importing ? 'Импортирую...' : `Импортировать ${ready.length} сотрудников`}
             </button>

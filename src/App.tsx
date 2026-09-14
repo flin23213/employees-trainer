@@ -1,5 +1,5 @@
 // Путь: src/App.tsx
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type RefObject } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from './auth/AuthProvider'
 import { supabase } from './lib/supabase'
@@ -27,7 +27,7 @@ import NewPasswordScreen from './screens/NewPasswordScreen'
  * Обычную перезагрузку страницы (F5) не трогаем: если вы читаете список
  * сотрудников и нажали F5, вы должны остаться на списке.
  */
-function StartAtHome({ afterLogin }: { afterLogin: boolean }) {
+function StartAtHome({ afterLogin }: { afterLogin: RefObject<boolean> }) {
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -35,7 +35,7 @@ function StartAtHome({ afterLogin }: { afterLogin: boolean }) {
       window.matchMedia('(display-mode: standalone)').matches ||
       (window.navigator as unknown as { standalone?: boolean }).standalone === true
 
-    if ((installed || afterLogin) && window.location.pathname !== '/') {
+    if ((installed || afterLogin.current) && window.location.pathname !== '/') {
       navigate('/', { replace: true })
     }
     // Пустой список зависимостей = «выполнить только при первом запуске»
@@ -79,6 +79,9 @@ export default function App() {
   // Запоминаем, показывали ли мы экран входа. Если да, значит следующий
   // запуск приложения — результат входа, и начинать надо с главной.
   const sawAuthScreen = useRef(false)
+  useEffect(() => {
+    if (!loading && !session) sawAuthScreen.current = true
+  }, [loading, session])
 
   if (loading) {
     return <div className="container center" style={{ paddingTop: 80 }}>Загрузка...</div>
@@ -90,13 +93,12 @@ export default function App() {
   }
 
   if (!session) {
-    sawAuthScreen.current = true
     return <AuthScreen />
   }
 
   return (
     <BrowserRouter>
-      <StartAtHome afterLogin={sawAuthScreen.current} />
+      <StartAtHome afterLogin={sawAuthScreen} />
       <Routes>
         <Route path="/" element={<HomeScreen />} />
         <Route path="/employees" element={<EmployeesScreen />} />

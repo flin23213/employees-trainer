@@ -1,5 +1,4 @@
 // Путь: src/lib/parseEmployees.ts
-import * as XLSX from 'xlsx'
 
 /** Одна распознанная строка будущего сотрудника */
 export type ParsedRow = {
@@ -346,6 +345,7 @@ export async function parseFile(file: File): Promise<ParseResult> {
   let matrix: string[][]
 
   if (name.endsWith('.xlsx') || name.endsWith('.xls') || name.endsWith('.xlsm')) {
+    const XLSX = await import('xlsx')
     const buf = await file.arrayBuffer()
     const wb = XLSX.read(buf, { type: 'array' })
     const sheetName = wb.SheetNames[0]
@@ -365,6 +365,12 @@ export async function parseFile(file: File): Promise<ParseResult> {
 
   const rows = matrixToRows(matrix, notes)
   if (rows.length === 0) notes.push('Не удалось найти ни одной строки с данными.')
+  return { rows, notes }
+}
+
+export function parseEmployeeMatrix(matrix: string[][]): ParseResult {
+  const notes: string[] = []
+  const rows = matrixToRows(matrix, notes)
   return { rows, notes }
 }
 
@@ -407,7 +413,8 @@ export function revalidate(rows: ParsedRow[], existingNames: string[]): ParsedRo
 
 /* ============================ ШАБЛОН EXCEL ============================ */
 
-export function downloadTemplate(): void {
+export async function downloadTemplate(): Promise<void> {
+  const XLSX = await import('xlsx')
   const data = [
     ['ФИО', 'Должность', 'Отдел', 'Чем занимается', 'Дополнительная информация'],
     ['Иванов Иван Иванович', 'Старший менеджер', 'Продажи', 'Работает с ключевыми клиентами и контролирует работу менеджеров', 'Сидит в 305 кабинете'],

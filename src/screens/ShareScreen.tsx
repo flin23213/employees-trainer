@@ -191,24 +191,24 @@ export default function ShareScreen() {
               <p className="section__sub">Код будет содержать людей только из выбранного профиля.</p>
             </div>
 
-            <div className="pick">
+            <div className="list-picker">
               {lists.map((l) => (
                 <button
                   key={l.id}
                   type="button"
-                  className={'pick__item' + (l.id === listId ? ' is-on' : '')}
+                  className={'list-picker__item' + (l.id === listId ? ' is-on' : '')}
                   disabled={l.employee_count === 0}
                   onClick={() => { setListId(l.id); setFresh(null) }}
                 >
-                  <span className="pick__emoji" aria-hidden="true">{l.emoji}</span>
+                  <span className="list-picker__emoji" aria-hidden="true">{l.emoji}</span>
                   <span style={{ flex: 1, minWidth: 0 }}>
-                    <span className="pick__name truncate">{l.name}</span>
-                    <span className="pick__sub">
+                    <span className="list-picker__name truncate">{l.name}</span>
+                    <span className="list-picker__sub">
                       {l.employee_count === 0 ? 'профиль пустой — делиться нечем' : `${l.employee_count} чел.`}
                       {l.is_active ? ' · активен' : ''}
                     </span>
                   </span>
-                  {l.id === listId && <span className="pick__tick" aria-hidden="true">✓</span>}
+                  {l.id === listId && <span className="list-picker__tick" aria-hidden="true">✓</span>}
                 </button>
               ))}
             </div>
