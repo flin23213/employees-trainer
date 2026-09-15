@@ -1,5 +1,5 @@
 // Only immutable, hashed build assets are cache-first. HTML stays fresh.
-const CACHE = 'trainer-v2'
+const CACHE = 'trainer-v3'
 const PRECACHE = ['/offline.html', '/manifest.webmanifest', '/icon-192.png']
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(PRECACHE)).then(() => self.skipWaiting()))

@@ -138,7 +138,7 @@ export default function ListsScreen() {
 
   return (
     <div className="container">
-      <AppHeader title="Профили списков" back />
+      <AppHeader title="Управление библиотекой" back />
 
       {error && <div className="card answer-wrong" style={{ marginBottom: 16 }}>Ошибка: {error}</div>}
       {loading && <div className="card center muted">Загружаю…</div>}

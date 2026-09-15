@@ -7,6 +7,7 @@ import { useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../auth/AuthProvider'
 import { useLists } from '../lib/lists'
+import AuthorLinks from './AuthorLinks'
 
 type Props = {
   open: boolean
@@ -17,15 +18,12 @@ type Props = {
 
 /** Разделы меню в одном месте: чтобы добавить новый, дописываете одну строку */
 const SECTIONS = [
-  { to: '/',          icon: '🏠', label: 'Главный экран' },
-  { to: '/learn',     icon: '🚀', label: 'Начать обучение' },
-  { to: '/cards',     icon: '🃏', label: 'Карточки' },
-  { to: '/test',      icon: '✍️', label: 'Тест' },
-  { to: '/review',    icon: '🔁', label: 'Повторить ошибки' },
-  { to: '/stats',     icon: '📊', label: 'Статистика' },
-  { to: '/employees', icon: '👥', label: 'Сотрудники' },
-  { to: '/lists',     icon: '📚', label: 'Профили списков' },
-  { to: '/import',    icon: '📂', label: 'Импорт из файла' },
+  { to: '/',          icon: '🏠', label: 'Главная' },
+  { to: '/library',   icon: '📚', label: 'Библиотека' },
+  { to: '/create',    icon: '➕', label: 'Создать список' },
+  { to: '/learn',     icon: '🃏', label: 'Карточки и тесты' },
+  { to: '/games',     icon: '🎮', label: 'Игры и рекорды' },
+  { to: '/stats',     icon: '📊', label: 'Мой прогресс' },
   { to: '/share',     icon: '🤝', label: 'Обмен списками' },
 ]
 
@@ -63,7 +61,7 @@ export default function AppMenu({ open, onClose, theme, onToggleTheme }: Props) 
         aria-hidden="true"
       />
 
-      <aside className={'drawer' + (open ? ' is-open' : '')} aria-label="Меню">
+      <aside className={'drawer' + (open ? ' is-open' : '')} aria-label="Меню" inert={!open} aria-hidden={!open}>
         <div className="drawer__head">
           {/* Вся плашка — ссылка в профиль */}
           <NavLink
@@ -88,14 +86,14 @@ export default function AppMenu({ open, onClose, theme, onToggleTheme }: Props) 
         {/* Какой список сотрудников открыт прямо сейчас */}
         {active && (
           <NavLink
-            to="/lists"
+            to="/library"
             end
             className={({ isActive }) => 'drawer__list' + (isActive ? ' is-active' : '')}
             onClick={onClose}
           >
             <span className="drawer__list-emoji" aria-hidden="true">{active.emoji}</span>
             <span style={{ flex: 1, minWidth: 0 }}>
-              <span className="drawer__list-label">Активный профиль</span>
+              <span className="drawer__list-label">Текущий список</span>
               <span className="drawer__list-name truncate">{active.name}</span>
             </span>
             <span className="muted small" style={{ flex: 'none' }}>
@@ -131,9 +129,7 @@ export default function AppMenu({ open, onClose, theme, onToggleTheme }: Props) 
         </nav>
 
         <div className="spacer" />
-        <div className="muted small center" style={{ marginTop: 20 }}>
-          Тренажёр сотрудников
-        </div>
+        <AuthorLinks />
       </aside>
     </>
   )

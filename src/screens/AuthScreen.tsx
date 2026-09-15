@@ -3,6 +3,7 @@ import type { FormEvent, ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
 import { getEnabledSocialProviders, oauthCallbackError, signInWithSocialProvider, SOCIAL_PROVIDERS } from '../lib/socialAuth'
 import type { Provider } from '@supabase/supabase-js'
+import AuthorLinks from '../components/AuthorLinks'
 
 /** Переводим технические сообщения Supabase на понятный русский */
 function translateError(message: string): string {
@@ -385,6 +386,7 @@ export default function AuthScreen() {
           </div>
 
           <p className="auth__scroll-hint muted small center">↓ ниже — коротко о тренажёре</p>
+          <AuthorLinks />
         </div>
       </div>
     </div>

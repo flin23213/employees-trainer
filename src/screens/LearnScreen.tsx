@@ -4,10 +4,12 @@
 import { Link } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
 import { computeStats, useEmployees } from '../lib/employees'
+import { useLists } from '../lib/lists'
 
 export default function LearnScreen() {
   const { list, loading } = useEmployees()
   const s = computeStats(list)
+  const { active } = useLists()
 
   if (!loading && s.total === 0) {
     return (
@@ -28,7 +30,7 @@ export default function LearnScreen() {
 
   return (
     <div className="container">
-      <AppHeader title="Начать обучение" back />
+      <AppHeader title={active?.name ?? 'Карточки и тесты'} back />
 
       <div className="stagger">
         <div className="card card--pad-lg brief__head">
@@ -77,6 +79,7 @@ export default function LearnScreen() {
         </div>
 
         <div className="stack">
+          <Link to="/games" className="action"><span className="action__icon">🎮</span><span className="action__body"><span className="action__title">Игры и личные рекорды</span><span className="action__desc">Сопоставляйте пары и отвечайте на время</span></span><span className="action__chev">→</span></Link>
           <Link to="/review" className="action">
             <span className="action__icon" aria-hidden="true">🔁</span>
             <span className="action__body">

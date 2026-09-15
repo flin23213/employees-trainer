@@ -16,6 +16,12 @@ import LearnScreen from './screens/LearnScreen'
 import ShareScreen from './screens/ShareScreen'
 import ListsScreen from './screens/ListsScreen'
 import NewPasswordScreen from './screens/NewPasswordScreen'
+import LibraryScreen from './screens/LibraryScreen'
+import CreateScreen from './screens/CreateScreen'
+import GamesScreen from './screens/GamesScreen'
+import GameScreen from './screens/GameScreen'
+import PrivacyScreen from './screens/PrivacyScreen'
+import BottomNav from './components/BottomNav'
 
 /**
  * Отвечает за правильную «точку входа».
@@ -83,6 +89,8 @@ export default function App() {
     if (!loading && !session) sawAuthScreen.current = true
   }, [loading, session])
 
+  if (window.location.pathname === '/privacy') return <PrivacyScreen />
+
   if (loading) {
     return <div className="container center" style={{ paddingTop: 80 }}>Загрузка...</div>
   }
@@ -101,6 +109,12 @@ export default function App() {
       <StartAtHome afterLogin={sawAuthScreen} />
       <Routes>
         <Route path="/" element={<HomeScreen />} />
+        <Route path="/library" element={<LibraryScreen />} />
+        <Route path="/create" element={<CreateScreen />} />
+        <Route path="/games" element={<GamesScreen />} />
+        <Route path="/games/match" element={<GameScreen key="match" mode="match" />} />
+        <Route path="/games/quiz" element={<GameScreen key="quiz" mode="quiz" />} />
+        <Route path="/privacy" element={<PrivacyScreen />} />
         <Route path="/employees" element={<EmployeesScreen />} />
         <Route path="/import" element={<ImportScreen />} />
         {/* Развилка: сначала выбор вида занятия, потом брифинг с настройками */}
@@ -116,6 +130,7 @@ export default function App() {
         <Route path="/insight/:group" element={<InsightScreen />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <BottomNav />
     </BrowserRouter>
   )
 }

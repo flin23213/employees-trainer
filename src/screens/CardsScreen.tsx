@@ -9,6 +9,7 @@ import Briefing, { Segmented, SwitchRow } from '../components/Briefing'
 import { recordAnswer, useEmployees, type SessionMode } from '../lib/employees'
 import { logAnswer } from '../lib/activity'
 import type { EmployeeWithProgress } from '../types'
+import { swipeDecision } from '../lib/cardGesture'
 
 /* ------------------------------------------------------------------ */
 /*  Настройки тренировки                                              */
@@ -92,17 +93,22 @@ export default function CardsScreen({ mode }: { mode: SessionMode }) {
   const [dx, setDx] = useState(0)
   const [dragging, setDragging] = useState(false)
   const [flying, setFlying] = useState(false)
-  const [flipKey, setFlipKey] = useState(0)
+  const flightTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const flightLock = useRef(false)
+  const pointer = useRef<number | null>(null)
+  const suppressClick = useRef(false)
   const startX = useRef(0)
   const startY = useRef(0)
   const axis = useRef<'none' | 'x' | 'y'>('none')
+
+  useEffect(() => () => { if (flightTimer.current) clearTimeout(flightTimer.current) }, [])
 
   const current: EmployeeWithProgress | null =
     phase === 'play' && index < deck.length ? deck[index] : null
   const total = deck.length
 
   useEffect(() => {
-    localStorage.setItem('cards-settings-' + mode, JSON.stringify(settings))
+    try { localStorage.setItem('cards-settings-' + mode, JSON.stringify(settings)) } catch { /* Storage unavailable. */ }
   }, [settings, mode])
 
   /* ---------------------------- начало ---------------------------- */
@@ -152,25 +158,28 @@ export default function CardsScreen({ mode }: { mode: SessionMode }) {
 
   /** Карточка улетает в сторону, и только потом записывается ответ */
   function fly(dir: 'left' | 'right') {
-    if (flying || !current) return
+    if (flightLock.current || !current) return
+    flightLock.current = true
     setFlying(true)
     setDragging(false)
     setDx(dir === 'right' ? 700 : -700)
-    window.setTimeout(() => {
+    flightTimer.current = setTimeout(() => {
       answer(dir === 'right')
+      flightLock.current = false
       setFlying(false)
     }, 220)
   }
 
   function reveal() {
-    if (revealed) return
+    if (revealed || flightLock.current) return
     setRevealed(true)
-    setFlipKey((k) => k + 1)   // перезапускаем анимацию переворота
   }
 
   /* -------------------------- жесты мыши/пальца -------------------- */
   function onPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
-    if (!settings.swipe || flying || !current) return
+    suppressClick.current = false
+    if (!settings.swipe || flightLock.current || !current || !e.isPrimary || e.button !== 0) return
+    pointer.current = e.pointerId
     startX.current = e.clientX
     startY.current = e.clientY
     axis.current = 'none'
@@ -179,28 +188,41 @@ export default function CardsScreen({ mode }: { mode: SessionMode }) {
   }
 
   function onPointerMove(e: ReactPointerEvent<HTMLDivElement>) {
-    if (!dragging) return
+    if (pointer.current !== e.pointerId) return
     const moveX = e.clientX - startX.current
     const moveY = e.clientY - startY.current
 
     // Решаем один раз: человек ведёт в сторону (свайп) или вниз (прокрутка)
     if (axis.current === 'none' && (Math.abs(moveX) > 8 || Math.abs(moveY) > 8)) {
+      suppressClick.current = true
       axis.current = Math.abs(moveX) > Math.abs(moveY) ? 'x' : 'y'
     }
     if (axis.current === 'x') setDx(moveX)
   }
 
-  function onPointerUp() {
-    if (!dragging) return
+  function cancelPointer() {
+    pointer.current = null
+    suppressClick.current = true
     setDragging(false)
-    if (axis.current === 'x' && Math.abs(dx) > 100) fly(dx > 0 ? 'right' : 'left')
+    setDx(0)
+  }
+
+  function onPointerUp(e: ReactPointerEvent<HTMLDivElement>) {
+    if (pointer.current !== e.pointerId) return
+    pointer.current = null
+    setDragging(false)
+    const direction = axis.current === 'x'
+      ? swipeDecision(e.clientX - startX.current, e.clientY - startY.current, e.currentTarget.offsetWidth)
+      : null
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId)
+    if (direction) fly(direction)
     else setDx(0)
   }
 
   /* -------------------------- клавиатура --------------------------- */
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (!current) return
+      if (!current || e.repeat || (e.target instanceof Element && e.target.closest('input, textarea, button, a, [role="dialog"]'))) return
       if (!revealed && (e.code === 'Space' || e.code === 'Enter')) { e.preventDefault(); reveal() }
       else if (e.key === '1' || e.key === 'ArrowLeft') fly('left')
       else if (e.key === '2' || e.key === 'ArrowRight') fly('right')
@@ -258,7 +280,7 @@ export default function CardsScreen({ mode }: { mode: SessionMode }) {
             }
             steps={[
               'На карточке видно только одну сторону, например ФИО. Попробуйте вспомнить остальное сами.',
-              'Нажмите «Показать ответ» (или пробел на компьютере) — карточка перевернётся.',
+              'Нажмите на карточку — появятся ответ и кнопки «Не знаю» / «Знаю». Можно нажать и «Показать ответ».',
               settings.swipe
                 ? 'Свайп вправо — «знаю», влево — «не знаю». Можно и просто нажать кнопку внизу.'
                 : 'Отметьте кнопкой внизу: «Знаю» или «Не знаю».',
@@ -443,15 +465,20 @@ export default function CardsScreen({ mode }: { mode: SessionMode }) {
         <div
           className={
             'swipe-card' +
-            (dragging ? ' is-dragging' : ' is-settling') +
-            (revealed ? ' is-flipping' : '')
+            (dragging ? ' is-dragging' : ' is-settling')
           }
-          key={`card-${index}-${flipKey}`}
+          key={`card-${index}`}
+          role="button"
+          tabIndex={0}
+          aria-label={revealed ? `${frontValue}. Ответ открыт` : `${frontValue}. Нажмите, чтобы показать ответ и кнопки`}
+          aria-expanded={revealed}
           style={{ transform: `translateX(${dx}px) rotate(${tilt}deg)` }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
-          onPointerCancel={onPointerUp}
+          onPointerCancel={cancelPointer}
+          onLostPointerCapture={() => { if (pointer.current !== null) cancelPointer() }}
+          onClick={() => { if (!suppressClick.current) reveal() }}
         >
           {settings.swipe && (
             <>
@@ -510,15 +537,15 @@ export default function CardsScreen({ mode }: { mode: SessionMode }) {
 
       <div style={{ marginTop: 16 }}>
         {!revealed ? (
-          <button className="btn btn--primary btn--block btn--lg" onClick={reveal}>
+          <button className="btn btn--primary btn--block btn--lg" onClick={reveal} disabled={flying}>
             Показать ответ
           </button>
         ) : (
           <div className="grid grid-2">
-            <button className="btn btn--danger btn--block btn--lg" onClick={() => fly('left')}>
+            <button className="btn btn--danger btn--block btn--lg" disabled={flying} onClick={() => fly('left')}>
               ❌ Не знаю
             </button>
-            <button className="btn btn--success btn--block btn--lg" onClick={() => fly('right')}>
+            <button className="btn btn--success btn--block btn--lg" disabled={flying} onClick={() => fly('right')}>
               ✅ Знаю
             </button>
           </div>
