@@ -33,7 +33,7 @@ export default function ProfileScreen() {
   }, [list])
 
   const email = session?.user.email ?? '—'
-  const providers: Record<string, string> = { email: 'Email и пароль', google: 'Google', github: 'GitHub', 'custom:telegram': 'Telegram' }
+  const providers: Record<string, string> = { email: 'Email и пароль', google: 'Google', github: 'GitHub', discord: 'Discord', 'custom:telegram': 'Telegram' }
   const loginMethods = session?.user.identities?.map(identity => providers[identity.provider] ?? identity.provider).join(', ') || 'Email и пароль'
 
   async function handleReset() {

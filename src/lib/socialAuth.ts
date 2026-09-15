@@ -4,6 +4,7 @@ import { supabase } from './supabase'
 export const SOCIAL_PROVIDERS: { id: Provider; label: string; mark: string }[] = [
   { id: 'google', label: 'Google', mark: 'G' },
   { id: 'github', label: 'GitHub', mark: 'GH' },
+  { id: 'discord', label: 'Discord', mark: 'DC' },
   { id: 'custom:telegram' as Provider, label: 'Telegram', mark: 'TG' },
 ]
 
