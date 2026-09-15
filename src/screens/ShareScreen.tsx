@@ -1,12 +1,12 @@
 // Путь: src/screens/ShareScreen.tsx
-// Обмен списками: создать код-приглашение из выбранного профиля
+// Обмен списками: создать код-приглашение из выбранного списка
 // или ввести код коллеги.
 //
 // Новое в этой версии:
-//  * перед созданием кода видно и выбирается, КАКИМ профилем делимся;
-//  * в карточке каждого кода написано, из какого он профиля;
+//  * перед созданием кода видно и выбирается, КАКИМ спискем делимся;
+//  * в карточке каждого кода написано, из какого он списка;
 //  * получатель может «заглянуть» в код до применения и видит, в какой
-//    свой профиль попадут люди.
+//    свой список попадут люди.
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
@@ -27,7 +27,7 @@ export default function ShareScreen() {
   const { lists, active, reload: reloadLists } = useLists()
   const [params] = useSearchParams()
 
-  const [tab, setTab] = useState<Tab>('give')
+  const [tab, setTab] = useState<Tab>(() => params.get('tab') === 'take' ? 'take' : 'give')
 
   /* --- создание кода --- */
   const [listId, setListId] = useState<string | null>(null)
@@ -47,7 +47,7 @@ export default function ShareScreen() {
   const [takeError, setTakeError] = useState<string | null>(null)
   const [result, setResult] = useState<RedeemResult | null>(null)
 
-  /* Какой профиль выбран для передачи: из адреса (?list=…), иначе активный */
+  /* Какой список выбран для передачи: из адреса (?list=…), иначе активный */
   useEffect(() => {
     if (listId !== null || lists.length === 0) return
     const wanted = params.get('list')
@@ -57,7 +57,7 @@ export default function ShareScreen() {
 
   const chosen = useMemo(() => lists.find((l) => l.id === listId) ?? null, [lists, listId])
 
-  /** Название профиля по его id: для карточек кодов */
+  /** Название списка по его id: для карточек кодов */
   const nameOf = useCallback(
     (id: string | null) => (id ? lists.find((l) => l.id === id)?.name ?? null : null),
     [lists]
@@ -179,16 +179,16 @@ export default function ShareScreen() {
             <span className="brief__emoji" aria-hidden="true">🤝</span>
             <h2 className="brief__title">Отдать свой список коллеге</h2>
             <p className="brief__what">
-              Выбираете профиль, получаете короткий код, коллега вводит его у себя — и ваши
+              Выбираете список, получаете короткий код, коллега вводит его у себя — и ваши
               сотрудники появляются в его аккаунте. Личный прогресс не передаётся: у каждого он свой.
             </p>
           </div>
 
-          {/* ---------- шаг 1: какой профиль отдаём ---------- */}
+          {/* ---------- шаг 1: какой список отдаём ---------- */}
           <div className="card" style={{ marginTop: 14 }}>
             <div className="section" style={{ margin: '0 0 12px' }}>
               <h3 className="section__title">1. Каким списком делитесь</h3>
-              <p className="section__sub">Код будет содержать людей только из выбранного профиля.</p>
+              <p className="section__sub">Код будет содержать людей только из выбранного списка.</p>
             </div>
 
             <div className="list-picker">
@@ -204,7 +204,7 @@ export default function ShareScreen() {
                   <span style={{ flex: 1, minWidth: 0 }}>
                     <span className="list-picker__name truncate">{l.name}</span>
                     <span className="list-picker__sub">
-                      {l.employee_count === 0 ? 'профиль пустой — делиться нечем' : `${l.employee_count} чел.`}
+                      {l.employee_count === 0 ? 'список пустой — делиться нечем' : `${l.employee_count} чел.`}
                       {l.is_active ? ' · активен' : ''}
                     </span>
                   </span>
@@ -215,7 +215,7 @@ export default function ShareScreen() {
 
             {lists.length === 0 && (
               <p className="muted small" style={{ marginBottom: 0 }}>
-                Профилей пока нет. Откройте <Link to="/lists">Профили списков</Link>.
+                Списков пока нет. Откройте <Link to="/library">библиотеку</Link>.
               </p>
             )}
           </div>
@@ -267,7 +267,7 @@ export default function ShareScreen() {
 
             {chosen && chosen.employee_count === 0 && (
               <p className="muted small center" style={{ marginTop: 10, marginBottom: 0 }}>
-                В этом профиле никого нет: сначала <Link to="/import">загрузите сотрудников</Link>.
+                В этом списке никого нет: сначала <Link to="/import">загрузите сотрудников</Link>.
               </p>
             )}
           </div>
@@ -276,7 +276,7 @@ export default function ShareScreen() {
           {fresh && (
             <div className="card card--pad-lg center code-box" style={{ marginTop: 14 }}>
               <p className="muted small" style={{ marginBottom: 6 }}>
-                Код на профиль «{fresh.listName}» · {fresh.count} чел.
+                Код на список «{fresh.listName}» · {fresh.count} чел.
               </p>
               <div className="code-box__value">{formatCode(fresh.code)}</div>
               <div className="grid grid-2" style={{ marginTop: 16 }}>
@@ -299,7 +299,7 @@ export default function ShareScreen() {
             <>
               <div className="section">
                 <h3 className="section__title">Мои коды · {codes.length}</h3>
-                <p className="section__sub">Видно, из какого профиля каждый код.</p>
+                <p className="section__sub">Видно, из какого списка каждый код.</p>
               </div>
               <div className="stack" style={{ gap: 8 }}>
                 {codes.map((c) => {
@@ -315,7 +315,7 @@ export default function ShareScreen() {
                         </span>
                       </div>
                       <p className="muted small" style={{ margin: '8px 0 10px' }}>
-                        Профиль: {listName ?? 'удалён'} · {c.employee_count} чел. · использован {c.uses}
+                        Список: {listName ?? 'удалён'} · {c.employee_count} чел. · использован {c.uses}
                         {c.max_uses === null ? ' раз' : ` из ${c.max_uses}`}
                       </p>
                       <div className="row" style={{ gap: 8 }}>
@@ -347,7 +347,7 @@ export default function ShareScreen() {
             <span className="brief__emoji" aria-hidden="true">🎟</span>
             <h2 className="brief__title">Получить готовый список</h2>
             <p className="brief__what">
-              Введите код, который дал коллега. Сотрудники добавятся в ваш активный профиль;
+              Введите код, который дал коллега. Сотрудники добавятся в ваш активный список;
               те, кто там уже есть, повторно не появятся.
             </p>
           </div>
@@ -357,10 +357,10 @@ export default function ShareScreen() {
               <div className="row">
                 <span style={{ fontSize: '1.4rem' }} aria-hidden="true">{active.emoji}</span>
                 <span style={{ flex: 1, minWidth: 0 }}>
-                  <span className="muted small" style={{ display: 'block' }}>Люди попадут в профиль</span>
+                  <span className="muted small" style={{ display: 'block' }}>Люди попадут в список</span>
                   <strong className="truncate" style={{ display: 'block' }}>{active.name}</strong>
                 </span>
-                <Link to="/lists" className="btn btn--sm">Сменить</Link>
+                <Link to="/library" className="btn btn--sm">Сменить</Link>
               </div>
             </div>
           )}
@@ -384,7 +384,7 @@ export default function ShareScreen() {
             {/* Что внутри кода */}
             {preview?.found && preview.alive && (
               <div className="card answer-correct small" style={{ margin: '12px 0' }}>
-                Код рабочий: профиль «{preview.list_name ?? preview.title ?? 'без названия'}»,
+                Код рабочий: список «{preview.list_name ?? preview.title ?? 'без названия'}»,
                 {' '}{preview.employee_count} чел.
                 {preview.is_mine && ' Это ваш собственный код.'}
               </div>
@@ -411,7 +411,7 @@ export default function ShareScreen() {
                 {result.added > 0 ? `Добавлено ${result.added} чел.` : 'Новых сотрудников нет'}
               </h3>
               <p className="muted small">
-                {result.list_name && <>Профиль «{result.list_name}». </>}
+                {result.list_name && <>Список «{result.list_name}». </>}
                 В списке по коду было {result.total_in_code} чел.
                 {result.skipped > 0 && ` Пропущено ${result.skipped}: они у вас уже есть.`}
               </p>

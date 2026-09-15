@@ -2,6 +2,7 @@
 import { useMemo, useState } from 'react'
 import AppHeader from '../components/AppHeader'
 import EmployeeForm from '../components/EmployeeForm'
+import ListContext from '../components/ListContext'
 import { STATUS_META, useEmployees } from '../lib/employees'
 import type { EmployeeWithProgress } from '../types'
 import { Link } from 'react-router-dom'
@@ -59,7 +60,9 @@ export default function EmployeesScreen() {
 
   return (
     <div className="container container--wide fade-in">
-      <AppHeader title="Сотрудники" back />
+      <AppHeader title="Редактировать список" back />
+      <ListContext />
+      {list.length > 0 && <p><Link to="/learn" className="btn btn--primary">Список готов — начать занятие →</Link></p>}
 
       <div className="card" style={{ marginBottom: 16 }}>
         <div className="field" style={{ marginBottom: 10 }}>
@@ -97,7 +100,7 @@ export default function EmployeesScreen() {
           <button className="btn btn--primary btn--block" onClick={() => setEditing({ mode: 'new' })}>
             + Добавить
           </button>
-          <Link to="/import" className="btn btn--block">📂 Импорт из файла</Link>
+          <Link to="/import" className="btn btn--block">Файл или фотография</Link>
         </div>
       </div>
 

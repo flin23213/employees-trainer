@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
+import ListContext from '../components/ListContext'
 import { insertEmployees, useEmployees, type ImportResult } from '../lib/employees'
 import { downloadTemplate, parseFile, revalidate, type ParsedRow } from '../lib/parseEmployees'
 import type { EmployeeInput } from '../lib/employees'
@@ -119,6 +120,7 @@ export default function ImportScreen() {
   return (
     <div className="container container--wide fade-in">
       <AppHeader title="Импорт сотрудников" back />
+      <ListContext />
 
       {/* --- Результат прошедшего импорта --- */}
       {result && (
@@ -134,8 +136,8 @@ export default function ImportScreen() {
             </>
           )}
           <div className="row">
-            <Link to="/employees" className="btn btn--primary btn--sm">К списку сотрудников</Link>
-            <Link to="/" className="btn btn--ghost btn--sm">На главную</Link>
+            <Link to="/learn" className="btn btn--primary btn--sm">Начать занятие</Link>
+            <Link to="/employees" className="btn btn--ghost btn--sm">Проверить список</Link>
           </div>
         </div>
       )}

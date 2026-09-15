@@ -33,6 +33,8 @@ export default function ProfileScreen() {
   }, [list])
 
   const email = session?.user.email ?? '—'
+  const providers: Record<string, string> = { email: 'Email и пароль', google: 'Google', github: 'GitHub', 'custom:telegram': 'Telegram' }
+  const loginMethods = session?.user.identities?.map(identity => providers[identity.provider] ?? identity.provider).join(', ') || 'Email и пароль'
 
   async function handleReset() {
     const ok = window.confirm(
@@ -70,7 +72,7 @@ export default function ProfileScreen() {
           <div style={{ minWidth: 0 }}>
             <div style={{ fontWeight: 700 }} className="truncate">{email}</div>
             <div className="muted small">Аккаунт создан: {formatDate(session?.user.created_at)}</div>
-            <div className="muted small">Способ входа: email и пароль</div>
+            <div className="muted small">Способы входа: {loginMethods}</div>
           </div>
         </div>
       </div>
@@ -78,7 +80,7 @@ export default function ProfileScreen() {
       {/* Общий прогресс */}
       <div className="card" style={{ marginBottom: 16 }}>
         <div className="row" style={{ marginBottom: 8 }}>
-          <strong>Общий прогресс</strong>
+          <strong>Прогресс текущего списка</strong>
           <div className="spacer" />
           <span className="badge badge--known">{s.progressPercent}%</span>
         </div>
@@ -126,9 +128,8 @@ export default function ProfileScreen() {
         {loading && <div className="muted small" style={{ marginTop: 10 }}>Обновляем данные...</div>}
       </div>
 
-      <div className="grid grid-2" style={{ marginBottom: 16 }}>
+      <div style={{ marginBottom: 16 }}>
         <Link to="/stats" className="btn btn--block">📊 Подробная статистика</Link>
-        <Link to="/employees" className="btn btn--block">👥 Сотрудники</Link>
       </div>
 
       {info && <div className="card answer-correct small" style={{ marginBottom: 16 }}>{info}</div>}

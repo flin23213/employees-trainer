@@ -23,7 +23,7 @@ export default function LibraryScreen() {
   }
   return <div className="container library-page">
     <AppHeader title="Ваша библиотека" />
-    <div className="page-heading"><p className="muted">Все ваши списки и занятия — в одном месте.</p>
+    <div className="page-heading"><p className="muted">Выберите список для занятия. Чтобы изменить состав, откройте «Редактировать список».</p>
       <Link to="/create" className="circle-button" aria-label="Создать список"><Icon name="plus" /></Link></div>
     <label className="library-search"><Icon name="search" /><input aria-label="Поиск по библиотеке" placeholder="Найти список" value={query} onChange={e => setQuery(e.target.value)} /></label>
     <div className="library-tabs" role="group" aria-label="Фильтр списков">
@@ -40,7 +40,7 @@ export default function LibraryScreen() {
         <div className="progress"><div className="progress__bar progress__bar--success" style={{ width: `${list.percent}%` }} /></div>
         <p className="module-card__progress">{list.percent}% изучено</p>
         <div className="module-card__actions"><button className="btn btn--primary" disabled={busy !== null || !list.employee_count} onClick={() => open(list, '/learn')}>{busy === list.id ? 'Открываю…' : 'Заниматься'}</button>
-          <button className="btn btn--ghost" disabled={busy !== null} onClick={() => open(list, list.employee_count ? '/employees' : '/import')}>{list.employee_count ? 'Сотрудники' : 'Добавить людей'}</button></div>
+          <button className="btn btn--ghost" disabled={busy !== null} onClick={() => open(list, list.employee_count ? '/employees' : '/import')}>{list.employee_count ? 'Редактировать список' : 'Добавить сотрудников'}</button></div>
       </article>)}</div>
       {!visible.length && <div className="empty-library"><Icon name="library" /><h2>{lists.length ? 'Ничего не найдено' : 'Библиотека начинается с первого списка'}</h2>
         <p className="muted">{lists.length ? 'Попробуйте другое название или фильтр.' : 'Создайте список и добавьте сотрудников из файла, фотографии или вручную.'}</p>
