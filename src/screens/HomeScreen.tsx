@@ -33,7 +33,7 @@ export default function HomeScreen() {
         <div className="progress"><div className="progress__bar progress__bar--success" style={{ width: `${continuation.percent}%` }} /></div>
         <p className="module-card__progress">{continuation.percent}% списка изучено</p>
         <button className="btn btn--primary btn--block btn--lg" disabled={busy} onClick={() => study(continuation)}>{busy ? 'Открываю…' : 'Продолжить'}<Icon name="arrow" /></button>
-      </article> : <article className="continue-card"><span className="module-icon"><Icon name="library" /></span><h2>Все коллеги — по именам</h2>
+      </article> : <article className="continue-card"><span className="module-icon module-icon--welcome"><Icon name="library" /></span><h2>Все коллеги — по именам</h2>
         <p className="muted">Создайте список, добавьте сотрудников и учитесь по несколько минут в день.</p>
         <Link className="btn btn--primary btn--block btn--lg" to="/create">Создать первый список<Icon name="plus" /></Link>
         <Link className="link-quiet" to="/import">Загрузить в текущий список</Link></article>}

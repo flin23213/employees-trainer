@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { getEnabledSocialProviders, oauthCallbackError, signInWithSocialProvider, SOCIAL_PROVIDERS } from '../lib/socialAuth'
 import type { Provider } from '@supabase/supabase-js'
 import AuthorLinks from '../components/AuthorLinks'
+import ProviderIcon from '../components/ProviderIcon'
 
 /** Переводим технические сообщения Supabase на понятный русский */
 function translateError(message: string): string {
@@ -267,7 +268,7 @@ export default function AuthScreen() {
                     {SOCIAL_PROVIDERS.filter(p => enabledProviders.includes(p.id)).map(provider => (
                       <button type="button" className="btn btn--ghost btn--block" key={provider.id}
                         disabled={busy} onClick={() => handleSocialLogin(provider.id)}>
-                        <span className="auth__provider-mark" aria-hidden="true">{provider.mark}</span>
+                        <ProviderIcon provider={provider.id} fallback={provider.mark} />
                         Продолжить с {provider.label}
                       </button>
                     ))}

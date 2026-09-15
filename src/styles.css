@@ -19,6 +19,8 @@
 .continue-card .btn { border-radius:18px; }
 .eyebrow { color:var(--text-muted); font-size:.7rem; letter-spacing:.12em; font-weight:750; }
 .module-icon { flex:none; display:grid; place-items:center; width:54px; height:54px; border-radius:17px; background:var(--primary-soft); color:var(--primary); font-size:26px; }
+.module-icon--welcome { background:var(--bg-elevated); border:1.5px solid var(--primary); box-shadow:var(--shadow-sm); }
+.module-icon--welcome svg { width:28px; height:28px; }
 .module-card h2 { font-size:1.3rem; margin:20px 0 6px; overflow-wrap:anywhere; }
 .module-card__progress { font-size:.88rem; font-weight:650; color:var(--text-muted); margin:10px 0 22px; }
 .module-card__actions { display:flex; gap:8px; flex-wrap:wrap; }
@@ -132,6 +134,12 @@
 .auth__social { display: grid; gap: 10px; margin-bottom: 16px; }
 .auth__social p { margin: 0; }
 .auth__provider-mark { display: inline-grid; place-items: center; width: 28px; font-weight: 800; }
+.auth__provider-logo { position:relative; display:block; width:20px; height:20px; overflow:hidden; flex:none; }
+.auth__provider-logo img { display:block; width:100%; height:100%; }
+.auth__provider-mark--google .auth__provider-logo { width:24px; height:24px; border-radius:50%; background:#fff; }
+.auth__provider-mark--google img { position:absolute; width:40px; height:40px; max-width:none; left:-8px; top:-8px; }
+[data-theme="dark"] .auth__provider-mark--github img,
+[data-theme="dark"] .auth__provider-mark--discord img { filter:invert(1); }
 :root {
   --bg:            #f5f6f8;
   --bg-elevated:   #ffffff;
