@@ -21,18 +21,11 @@ import CreateScreen from './screens/CreateScreen'
 import GamesScreen from './screens/GamesScreen'
 import GameScreen from './screens/GameScreen'
 import PrivacyScreen from './screens/PrivacyScreen'
+import DailyScreen from './screens/DailyScreen'
+import ListDetailScreen from './screens/ListDetailScreen'
 import BottomNav from './components/BottomNav'
 
-/**
- * Отвечает за правильную «точку входа».
- *
- * Срабатывает один раз при запуске и переводит на главный экран, если:
- *  - приложение открыто как установленная иконка (телефон, рабочий стол);
- *  - либо пользователь только что вошёл или зарегистрировался.
- *
- * Обычную перезагрузку страницы (F5) не трогаем: если вы читаете список
- * сотрудников и нажали F5, вы должны остаться на списке.
- */
+/** После входа открываем главную. Ссылки уведомлений и запуск PWA сохраняют свой маршрут. */
 function StartAtHome({ afterLogin }: { afterLogin: RefObject<boolean> }) {
   const navigate = useNavigate()
 
@@ -41,7 +34,7 @@ function StartAtHome({ afterLogin }: { afterLogin: RefObject<boolean> }) {
       window.matchMedia('(display-mode: standalone)').matches ||
       (window.navigator as unknown as { standalone?: boolean }).standalone === true
 
-    if ((installed || afterLogin.current) && window.location.pathname !== '/') {
+    if (afterLogin.current && !installed && !['/', '/today'].includes(window.location.pathname)) {
       navigate('/', { replace: true })
     }
     // Пустой список зависимостей = «выполнить только при первом запуске»
@@ -109,6 +102,8 @@ export default function App() {
       <StartAtHome afterLogin={sawAuthScreen} />
       <Routes>
         <Route path="/" element={<HomeScreen />} />
+        <Route path="/today" element={<DailyScreen />} />
+        <Route path="/library/:id" element={<ListDetailScreen />} />
         <Route path="/library" element={<LibraryScreen />} />
         <Route path="/create" element={<CreateScreen />} />
         <Route path="/games" element={<GamesScreen />} />

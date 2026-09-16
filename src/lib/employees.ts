@@ -157,10 +157,11 @@ export async function insertEmployees(rows: EmployeeInput[]): Promise<ImportResu
  * Записываем ответ. Всю арифметику (попытки, серия, дата) делает функция
  * record_answer внутри базы, поэтому испортить статистику из браузера нельзя.
  */
-export async function recordAnswer(employeeId: string, correct: boolean): Promise<void> {
+export async function recordAnswer(employeeId: string, correct: boolean, eventId: string = crypto.randomUUID()): Promise<void> {
   const { error } = await supabase.rpc('record_answer', {
     p_employee_id: employeeId,
     p_correct: correct,
+    p_event_id: eventId,
   })
   if (error) throw new Error(friendlyDbError(error.message, error.code))
 }

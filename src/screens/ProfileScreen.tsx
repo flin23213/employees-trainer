@@ -4,6 +4,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
+import ReminderSettings from '../components/ReminderSettings'
 import { useAuth } from '../auth/AuthProvider'
 import { computeStats, resetAllProgress, useEmployees } from '../lib/employees'
 import { clearActivity } from '../lib/activity'
@@ -134,6 +135,8 @@ export default function ProfileScreen() {
 
       {info && <div className="card answer-correct small" style={{ marginBottom: 16 }}>{info}</div>}
 
+      <ReminderSettings />
+
       {/* Опасные действия — отдельно, чтобы не нажать случайно */}
       <div className="card">
         <strong>Управление данными</strong>
@@ -144,7 +147,7 @@ export default function ProfileScreen() {
           <button className="btn btn--danger btn--block" onClick={handleReset} disabled={busy}>
             {busy ? 'Сбрасываю...' : '↺ Обнулить весь прогресс'}
           </button>
-          <button className="btn btn--ghost btn--block" onClick={() => void signOut()}>
+          <button className="btn btn--ghost btn--block" onClick={() => void signOut().catch(() => setInfo('Не удалось завершить выход. Проверьте соединение и попробуйте снова.'))}>
             🚪 Выйти из аккаунта
           </button>
         </div>

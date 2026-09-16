@@ -4,6 +4,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
+import { disableDeviceReminders } from '../lib/reminders'
 
 type AuthValue = {
   session: Session | null      // null = не вошёл
@@ -38,6 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signOut = async () => {
+    await disableDeviceReminders()
     await supabase.auth.signOut()
   }
 

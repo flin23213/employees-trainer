@@ -121,7 +121,7 @@ export default function AppMenu({ open, onClose, theme, onToggleTheme }: Props) 
 
           <button
             className="drawer__item drawer__item--danger"
-            onClick={() => { onClose(); void signOut() }}
+            onClick={() => { void signOut().then(onClose).catch(() => alert('Не удалось выйти. Проверьте соединение и попробуйте снова.')) }}
           >
             <span className="drawer__icon">🚪</span>
             <span>Выйти</span>
