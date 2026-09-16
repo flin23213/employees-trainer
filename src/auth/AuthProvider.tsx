@@ -39,8 +39,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signOut = async () => {
-    await disableDeviceReminders()
-    await supabase.auth.signOut()
+    try { await disableDeviceReminders() } catch { /* A push-service outage must not prevent signing out. The local subscription is also invalidated. */ }
+    const { error } = await supabase.auth.signOut()
+    if (error) throw error
   }
 
   return (

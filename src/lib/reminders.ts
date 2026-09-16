@@ -33,6 +33,6 @@ export async function disableDeviceReminders() {
   const registration=await navigator.serviceWorker.getRegistration('/')
   const subscription=await registration?.pushManager.getSubscription()
   if(!subscription)return
-  await reminderRequest({action:'disable',endpoint:subscription.endpoint})
-  await subscription.unsubscribe()
+  try { await reminderRequest({action:'disable',endpoint:subscription.endpoint}) }
+  finally { await subscription.unsubscribe() }
 }
