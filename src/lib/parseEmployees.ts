@@ -56,6 +56,7 @@ const TITLE_WORDS = [
   'координатор','ассистент','супервайзер','кассир','товаровед','снабжен','закупк','сборщик',
   'грузчик','рабочий','стажёр','стажер','практикант','президент','главный','старший',
   'младший','ведущий','hr','it','ceo','cto','cfo','smm','pr',
+  'контролер','контролёр','мерчендайзер','оформител','manager',
 ]
 
 function looksLikeTitle(value: string): boolean {
@@ -73,8 +74,11 @@ const DEPT_WORDS = [
 /** Строка-заголовок отдела вида «Отдел продаж:» или «Бухгалтерия» */
 function looksLikeDeptHeader(value: string): boolean {
   const t = clean(value)
-  if (!t || looksLikeName(t)) return false
-  if (t.split(' ').length > 5) return false
+  if (!t || t.split(' ').length > 14) return false
+  if (/^(?:руководство|информационные технологии|e-commerce|marketing)(?:\s|$)/i.test(t)) return true
+  if (/^(?:отдел(?:ение)?|департамент|подразделение|служба|управление|сектор|дирекция|цех|бухгалтерия|администрация)(?:\s|$)/i.test(t)) return true
+  if (/\s(?:отдел|департамент|служба|подразделение)$/i.test(t)) return true
+  if (looksLikeName(t)) return false
   if (t.endsWith(':')) return true
   const low = t.toLowerCase()
   return DEPT_WORDS.some((w) => low.includes(w))
@@ -219,7 +223,6 @@ function emptyRow(line: number): ParsedRow {
 function matrixToRows(matrix: string[][], notes: string[]): ParsedRow[] {
   const grid = matrix
     .map((r) => r.map((c) => clean(c)))
-    .filter((r) => r.some((c) => c !== ''))
 
   if (grid.length === 0) return []
 
@@ -237,6 +240,7 @@ function matrixToRows(matrix: string[][], notes: string[]): ParsedRow[] {
     let currentDept = ''
 
     lines.forEach((line, i) => {
+      if (!line) return
       if (looksLikeDeptHeader(line)) {
         currentDept = line.replace(/:$/, '').trim()
         notes.push(`Строка ${i + 1}: «${currentDept}» принята за название отдела.`)
@@ -255,17 +259,23 @@ function matrixToRows(matrix: string[][], notes: string[]): ParsedRow[] {
 
   /* --- Случай 2: несколько столбцов. Пытаемся прочитать заголовки --- */
   const mapping = new Map<number, Field>()
-  const firstRow = grid[0]
-  let matched = 0
-  firstRow.forEach((cell, idx) => {
-    const field = matchHeader(cell)
-    if (field && !Array.from(mapping.values()).includes(field)) { mapping.set(idx, field); matched++ }
-  })
-
   let startIndex = 0
-  if (matched >= 2 && Array.from(mapping.values()).includes('full_name')) {
-    startIndex = 1
-    notes.push('Заголовки столбцов распознаны из первой строки.')
+  let headerIndex = -1
+  for (let i = 0; i < Math.min(grid.length, 50); i++) {
+    const candidate = new Map<number, Field>()
+    grid[i].forEach((cell, col) => {
+      const field = matchHeader(cell)
+      if (field && !Array.from(candidate.values()).includes(field)) candidate.set(col, field)
+    })
+    if (Array.from(candidate.values()).includes('full_name') && Array.from(candidate.values()).includes('job_title')) {
+      candidate.forEach((field, col) => mapping.set(col, field))
+      headerIndex = i
+      break
+    }
+  }
+  if (headerIndex >= 0) {
+    startIndex = headerIndex + 1
+    notes.push(`Заголовки столбцов распознаны в строке ${headerIndex + 1}. Строки выше пропущены.`)
   } else {
     /* --- Заголовков нет: определяем столбцы по содержимому --- */
     mapping.clear()
@@ -302,6 +312,15 @@ function matrixToRows(matrix: string[][], notes: string[]): ParsedRow[] {
   for (let i = startIndex; i < grid.length; i++) {
     const raw = grid[i]
     const filled = raw.filter((c) => c !== '')
+    if (!filled.length) continue
+    if (headerIndex >= 0 && Array.from(mapping).every(([col, field]) => matchHeader(raw[col] ?? '') === field)) continue
+
+    // Shared reception/office phone records are contacts, not employee roles.
+    if (headerIndex >= 0 && filled.some(c => /^(?:reception|ресепш[еи]н|при[её]мная|телефон офиса)(?:\s|:|$)/i.test(c)) &&
+        !Array.from(mapping).some(([col, field]) => field === 'job_title' && raw[col])) {
+      notes.push(`Строка ${i + 1}: общий контакт без должности пропущен.`)
+      continue
+    }
 
     // Строка-заголовок отдела: заполнена только одна ячейка
     if (filled.length === 1 && looksLikeDeptHeader(filled[0])) {
@@ -353,7 +372,7 @@ export async function parseFile(file: File): Promise<ParseResult> {
       notes.push(`В файле ${wb.SheetNames.length} листа, взят первый: «${sheetName}».`)
     }
     matrix = XLSX.utils.sheet_to_json<string[]>(wb.Sheets[sheetName], {
-      header: 1, blankrows: false, defval: '', raw: false,
+      header: 1, blankrows: true, defval: '', raw: false,
     })
   } else if (name.endsWith('.csv')) {
     matrix = parseCsv(await decodeText(file))
