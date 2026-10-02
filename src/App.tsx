@@ -23,6 +23,7 @@ import GameScreen from './screens/GameScreen'
 import PrivacyScreen from './screens/PrivacyScreen'
 import DailyScreen from './screens/DailyScreen'
 import ListDetailScreen from './screens/ListDetailScreen'
+import DemoScreen from './screens/DemoScreen'
 import AppLayout from './components/AppLayout'
 
 /** После входа открываем главную. Ссылки уведомлений и запуск PWA сохраняют свой маршрут. */
@@ -83,6 +84,7 @@ export default function App() {
   }, [loading, session])
 
   if (window.location.pathname === '/privacy') return <PrivacyScreen />
+  if (window.location.pathname === '/demo') return <DemoScreen />
 
   if (loading) {
     return <div className="container center" style={{ paddingTop: 80 }}>Загрузка...</div>
@@ -104,6 +106,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<HomeScreen />} />
         <Route path="/today" element={<DailyScreen />} />
+        <Route path="/demo" element={<DemoScreen />} />
         <Route path="/library/:id" element={<ListDetailScreen />} />
         <Route path="/library" element={<LibraryScreen />} />
         <Route path="/create" element={<CreateScreen />} />

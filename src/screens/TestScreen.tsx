@@ -5,8 +5,11 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
 import Briefing, { Segmented } from '../components/Briefing'
+import TrainingScope from '../components/TrainingScope'
 import Icon from '../components/Icon'
 import { recordAnswer, useEmployees } from '../lib/employees'
+import { useLists } from '../lib/lists'
+import { filterTrainingEmployees, scopeForList, type ListTrainingScope } from '../lib/trainingScope'
 import { logAnswer } from '../lib/activity'
 import { buildQuiz, type Question, type QuizMode, type QuizTopic } from '../lib/quiz'
 import { checkAnswer, type CheckResult } from '../lib/answerCheck'
@@ -42,6 +45,10 @@ function isWeak(e: EmployeeWithProgress): boolean {
 
 export default function TestScreen() {
   const { list, loading, error, reload } = useEmployees()
+  const { active, loading: listsLoading, error: listsError } = useLists()
+  const [selection, setSelection] = useState<ListTrainingScope | null>(null)
+  const scope = scopeForList(selection, active?.id)
+  const selectedPool = filterTrainingEmployees(list, scope)
 
   const [settings, setSettings] = useState<Settings>(() => loadSettings())
   const [phase, setPhase] = useState<Phase>('brief')
@@ -69,9 +76,9 @@ export default function TestScreen() {
 
   /** Список, из которого берём вопросы (с защитой: слишком узкий пул не годится) */
   function pickPool(st: Settings): EmployeeWithProgress[] {
-    if (st.pool === 'all') return list
-    const weak = list.filter(isWeak)
-    return weak.length >= 4 ? weak : list
+    if (st.pool === 'all') return selectedPool
+    const weak = selectedPool.filter(isWeak)
+    return weak.length >= 4 ? weak : selectedPool
   }
 
   function makeQuestions(st: Settings): Question[] {
@@ -81,7 +88,9 @@ export default function TestScreen() {
   }
 
   function start() {
+    if (loading || listsLoading || !active) return
     const q = makeQuestions(settings)
+    if (!q.length) return
     setQuestions(q)
     setIndex(0)
     setInput('')
@@ -163,14 +172,14 @@ export default function TestScreen() {
   /* ============================ БРИФИНГ =========================== */
   if (phase === 'brief') {
     const preview = loading ? [] : makeQuestions(settings)
-    const weakCount = list.filter(isWeak).length
+    const weakCount = selectedPool.filter(isWeak).length
 
     return (
       <div className="container" ref={page}>
         <AppHeader title="Тест" back />
 
         {loading && <div className="card center muted">Загружаю…</div>}
-        {error && <div className="card answer-wrong">Ошибка: {error}</div>}
+        {(error || listsError) && <div className="card answer-wrong">Ошибка: {error || listsError}</div>}
 
         {!loading && list.length === 0 && (
           <div className="card card--pad-lg center">
@@ -197,6 +206,7 @@ export default function TestScreen() {
             ]}
             settings={
               <>
+                <TrainingScope key={active?.id} employees={list} value={scope} disabled={listsLoading || !active} onChange={value => { if (active) setSelection({ listId: active.id, value }) }} />
                 <div className="setting">
                   <div className="setting__title">Что проверять</div>
                   <p className="setting__hint">
@@ -249,7 +259,7 @@ export default function TestScreen() {
                   <p className="setting__hint">
                     {weakCount >= 4
                       ? `Слабых мест сейчас ${weakCount}. Можно погонять только их.`
-                      : 'Слабых мест пока меньше четырёх, поэтому режим «слабые» автоматически расширится до всего списка.'}
+                      : 'Слабых мест пока меньше четырёх, поэтому вопросы будут из всего выбранного состава.'}
                   </p>
                   <Segmented
                     value={settings.pool}
@@ -264,13 +274,15 @@ export default function TestScreen() {
             }
             summary={
               preview.length === 0
-                ? settings.topic === 'departments'
+                ? selectedPool.length === 0
+                  ? 'Никто не выбран. Измените фильтры или сбросьте выбор сотрудников.'
+                  : settings.topic === 'departments'
                   ? 'Добавьте отделы сотрудникам. Для режима «Выбор» нужно минимум 4 разных отдела; для ввода ответа достаточно одного.'
                   : 'По этим настройкам вопросы не собрались. Для режима «Выбор» нужно минимум 4 человека с разными должностями.'
                 : `Готово ${preview.length} ${preview.length === 1 ? 'вопрос' : preview.length < 5 ? 'вопроса' : 'вопросов'}`
             }
             startLabel={preview.length === 0 ? 'Вопросы не собрались' : 'Начать тест'}
-            disabled={preview.length === 0}
+            disabled={preview.length === 0 || listsLoading || !active}
             onStart={start}
           />
         )}

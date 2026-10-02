@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
 import Icon from '../components/Icon'
 import LoadError from '../components/LoadError'
+import WeeklySummary from '../components/WeeklySummary'
 import { computeDepartmentStats, computeStats, useEmployees } from '../lib/employees'
 import { useLists } from '../lib/lists'
 import '../styles/stats.css'
@@ -101,5 +102,6 @@ export default function StatsScreen() {
         </div>
       </details>
     </>}
+    <WeeklySummary />
   </div>
 }

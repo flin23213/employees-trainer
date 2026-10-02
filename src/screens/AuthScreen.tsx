@@ -5,6 +5,7 @@ import { getEnabledSocialProviders, oauthCallbackError, signInWithSocialProvider
 import type { Provider } from '@supabase/supabase-js'
 import AuthorLinks from '../components/AuthorLinks'
 import ProviderIcon from '../components/ProviderIcon'
+import '../styles/demo.css'
 
 /** Переводим технические сообщения Supabase на понятный русский */
 function translateError(message: string): string {
@@ -386,6 +387,7 @@ export default function AuthScreen() {
             )}
           </div>
 
+          <a className="auth-example" href="/demo">Попробовать на примере без регистрации</a>
           <p className="auth__scroll-hint muted small center">↓ ниже — коротко о тренажёре</p>
           <AuthorLinks />
         </div>

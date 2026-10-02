@@ -7,7 +7,10 @@ import type { PointerEvent as ReactPointerEvent } from 'react'
 import { Link } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
 import Briefing, { Segmented, SwitchRow } from '../components/Briefing'
+import TrainingScope from '../components/TrainingScope'
 import { recordAnswer, useEmployees, type SessionMode } from '../lib/employees'
+import { useLists } from '../lib/lists'
+import { filterTrainingEmployees, scopeForList, type ListTrainingScope } from '../lib/trainingScope'
 import { logAnswer } from '../lib/activity'
 import type { EmployeeWithProgress } from '../types'
 import { swipeDecision } from '../lib/cardGesture'
@@ -80,6 +83,10 @@ function buildDeck(list: EmployeeWithProgress[], st: Settings): EmployeeWithProg
 
 export default function CardsScreen({ mode }: { mode: SessionMode }) {
   const { list, loading, error, reload } = useEmployees()
+  const { active, loading: listsLoading, error: listsError } = useLists()
+  const [selection, setSelection] = useState<ListTrainingScope | null>(null)
+  const scope = scopeForList(selection, active?.id)
+  const selectedPool = filterTrainingEmployees(list, scope)
 
   const [settings, setSettings] = useState<Settings>(() => loadSettings(mode))
   const [phase, setPhase] = useState<Phase>('brief')
@@ -118,7 +125,9 @@ export default function CardsScreen({ mode }: { mode: SessionMode }) {
 
   /* ---------------------------- начало ---------------------------- */
   function start() {
-    const built = buildDeck(list, settings)
+    if (loading || listsLoading || !active) return
+    const built = buildDeck(selectedPool, settings)
+    if (!built.length) return
     setDeck(built)
     setIndex(0)
     setRevealed(false)
@@ -238,7 +247,7 @@ export default function CardsScreen({ mode }: { mode: SessionMode }) {
 
   /* ============================ БРИФИНГ =========================== */
   if (phase === 'brief') {
-    const preview = buildDeck(list, settings)
+    const preview = buildDeck(selectedPool, settings)
 
     const orderOptions =
       mode === 'review'
@@ -254,7 +263,7 @@ export default function CardsScreen({ mode }: { mode: SessionMode }) {
         <AppHeader title={TITLES[mode]} back />
 
         {loading && <div className="card center muted">Загружаю…</div>}
-        {error && <div className="card answer-wrong">Ошибка: {error}</div>}
+        {(error || listsError) && <div className="card answer-wrong">Ошибка: {error || listsError}</div>}
 
         {!loading && list.length === 0 && (
           <div className="card card--pad-lg center">
@@ -280,7 +289,7 @@ export default function CardsScreen({ mode }: { mode: SessionMode }) {
               mode === 'review'
                 ? 'Короткий заход по тем, кого вы не вспомнили или путаете. Самый быстрый способ убрать красные цифры.'
                 : mode === 'all'
-                  ? 'Весь список подряд, в случайном порядке. Подходит, чтобы освежить память целиком.'
+                  ? 'Карточки выбранных сотрудников в случайном порядке. Подходит, чтобы освежить память.'
                   : 'Тренажёр сам выбирает, кого показать: сначала незнакомые и давно не повторявшиеся. 5-10 минут в день дают лучший результат.'
             }
             steps={[
@@ -293,6 +302,7 @@ export default function CardsScreen({ mode }: { mode: SessionMode }) {
             ]}
             settings={
               <>
+                <TrainingScope key={active?.id} employees={list} value={scope} disabled={listsLoading || !active} onChange={value => { if (active) setSelection({ listId: active.id, value }) }} />
                 <div className="setting">
                   <div className="setting__title">Сколько карточек</div>
                   <p className="setting__hint">Короткие частые заходы работают лучше долгих редких.</p>
@@ -349,13 +359,15 @@ export default function CardsScreen({ mode }: { mode: SessionMode }) {
             }
             summary={
               preview.length === 0
-                ? mode === 'review'
+                ? selectedPool.length === 0
+                  ? 'Никто не выбран. Измените фильтры или сбросьте выбор сотрудников.'
+                  : mode === 'review'
                   ? 'Слабых мест нет — повторять нечего. Отличная новость!'
                   : 'По этим настройкам колода получилась пустой. Смените порядок.'
                 : `В колоде ${preview.length} ${preview.length === 1 ? 'карточка' : preview.length < 5 ? 'карточки' : 'карточек'}`
             }
             startLabel={preview.length === 0 ? 'Нечего показывать' : '▶ Начать'}
-            disabled={preview.length === 0}
+            disabled={preview.length === 0 || listsLoading || !active}
             onStart={start}
           />
         )}

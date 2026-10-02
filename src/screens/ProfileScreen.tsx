@@ -4,9 +4,10 @@ import { Link } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
 import ReminderSettings from '../components/ReminderSettings'
 import Icon from '../components/Icon'
+import InstallGuide from '../components/InstallGuide'
 import { useAuth } from '../auth/AuthProvider'
 import { resetAllProgress } from '../lib/employees'
-import { clearActivity } from '../lib/activity'
+import { clearActivity, getActivityAccount } from '../lib/activity'
 import '../styles/account.css'
 
 function formatDate(iso: string | undefined): string {
@@ -34,9 +35,10 @@ export default function ProfileScreen() {
 
     setBusy(true)
     setInfo(null)
+    const userId = getActivityAccount()
     try {
       await resetAllProgress()
-      clearActivity()
+      clearActivity(userId)
       setInfo('Прогресс обнулён — можно учиться с чистого листа.')
     } catch (e) {
       setInfo(e instanceof Error ? e.message : 'Не удалось сбросить прогресс')
@@ -60,6 +62,7 @@ export default function ProfileScreen() {
       </section>
 
       <ReminderSettings />
+      <InstallGuide />
 
       <Link to="/stats" className="btn btn--block account-progress"><Icon name="chart" />Открыть прогресс обучения<Icon name="arrow" /></Link>
 

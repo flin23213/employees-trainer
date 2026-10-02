@@ -1,0 +1,44 @@
+.import-page .import-mapping { margin-bottom:16px; }
+.import-page .import-mapping > summary { display:flex; justify-content:space-between; align-items:center; gap:12px; font-weight:650; cursor:pointer; list-style:none; }
+.import-page .import-mapping > summary::-webkit-details-marker { display:none; }
+.import-page .import-mapping > p { margin-top:14px; }
+.import-page .import-mapping[open] > summary svg { transform:rotate(90deg); }
+.import-page .import-mapping__source { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin-bottom:16px; }
+.import-page .import-mapping__columns { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin-bottom:16px; }
+.import-page .import-mapping label { min-width:0; }
+.import-page .import-mapping .input { margin-top:6px; width:100%; min-width:0; }
+.import-page .import-mapping__pending { margin:10px 0 0; color:var(--warning); }
+.import-page .import-extra-fields { margin:14px 0; }
+.import-page .import-extra-fields > summary,.import-page .import-notes > summary { font-size:.85rem; color:var(--text-muted); cursor:pointer; }
+.import-page .import-extra-fields .import-mapping__columns { margin-top:14px; grid-template-columns:repeat(2,minmax(0,1fr)); }
+.import-page .import-notes { margin:14px 0; }
+.import-page .import-notes ul { padding-left:18px; margin:10px 0; }
+.import-page .import-filters { margin-top:16px; flex-wrap:wrap; overflow:visible; }
+.import-page .import-filter-hint { margin:10px 0 0; }
+.import-page .import-rows { display:grid; gap:10px; margin-bottom:16px; }
+.import-page .import-row { display:flex; align-items:flex-start; gap:12px; padding:16px; border:1px solid var(--border); border-radius:16px; background:var(--bg-elevated); min-width:0; }
+.import-page .import-row--blocked { border-color:var(--danger); }
+.import-page .import-row--warning { border-color:var(--warning); }
+.import-page .import-row > input { flex:none; width:22px; height:22px; margin:2px 0; accent-color:var(--primary); }
+.import-page .import-row > details { min-width:0; flex:1; }
+.import-page .import-row summary { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; cursor:pointer; list-style:none; }
+.import-page .import-row summary::-webkit-details-marker { display:none; }
+.import-page .import-row summary > span { min-width:0; flex:1; overflow-wrap:anywhere; }
+.import-page .import-row summary svg { width:18px; height:18px; flex:none; color:var(--text-muted); }
+.import-page .import-row details[open] > summary svg { transform:rotate(90deg); }
+.import-page .import-row summary strong { font-size:.92rem; }
+.import-page .import-row__role,.import-page .import-row__number,.import-page .import-row__problems { display:block; font-size:.78rem; line-height:1.5; margin-top:3px; }
+.import-page .import-row__role { color:var(--text-muted); }
+.import-page .import-row__number { color:var(--primary); font-size:.7rem; }
+.import-page .import-row__problems { color:var(--danger); }
+.import-page .import-row__fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; padding-top:18px; margin-top:14px; border-top:1px solid var(--border); }
+.import-page .import-row__fields .label { min-width:0; margin:0; }
+.import-page .import-row__fields .input { margin-top:6px; }
+.import-page .import-row__fields textarea { resize:vertical; }
+.import-page .import-submit { box-shadow:var(--shadow-sm); }
+.import-page summary:focus-visible { outline:2px solid var(--primary); outline-offset:4px; border-radius:4px; }
+@media(max-width:600px) {
+  .import-page .import-mapping__source,.import-page .import-mapping__columns,.import-page .import-extra-fields .import-mapping__columns,.import-page .import-row__fields { grid-template-columns:1fr; }
+  .import-page .import-row { padding:14px 12px; gap:10px; }
+  .import-page .import-submit { padding:14px; }
+}

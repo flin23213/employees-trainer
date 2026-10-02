@@ -129,7 +129,10 @@ function normalizeTitle(value: string): string {
 
 /* ============================ ЗАГОЛОВКИ СТОЛБЦОВ ====================== */
 
-type Field = 'full_name' | 'job_title' | 'department' | 'description' | 'notes'
+export type ImportField = 'full_name' | 'job_title' | 'department' | 'description' | 'notes'
+type Field = ImportField
+export type ImportMapping = { columns: Partial<Record<ImportField, number>>; startRow: number; headerRow: number | null }
+export type ImportSheet = { name: string; matrix: string[][] }
 
 const HEADER_SYNONYMS: Record<Field, string[]> = {
   full_name:   ['фио','ф.и.о','фамилия имя отчество','фамилия','сотрудник','работник','полное имя','имя','name','fullname'],
@@ -220,7 +223,7 @@ function emptyRow(line: number): ParsedRow {
            include: true, problems: [], blocking: false }
 }
 
-function matrixToRows(matrix: string[][], notes: string[]): ParsedRow[] {
+function matrixToRows(matrix: string[][], notes: string[], configured?: ImportMapping): ParsedRow[] {
   const grid = matrix
     .map((r) => r.map((c) => clean(c)))
 
@@ -229,7 +232,7 @@ function matrixToRows(matrix: string[][], notes: string[]): ParsedRow[] {
   const width = Math.max(...grid.map((r) => r.length))
 
   /* --- Случай 1: всего один столбец (обычный TXT или одна колонка Excel) --- */
-  if (width === 1) {
+  if (width === 1 && !configured) {
     const lines = grid.map((r) => stripMarkers(r[0]))
     const dataLines = lines.filter((l) => !looksLikeDeptHeader(l))
     const sep = detectSeparator(dataLines)
@@ -258,52 +261,14 @@ function matrixToRows(matrix: string[][], notes: string[]): ParsedRow[] {
   }
 
   /* --- Случай 2: несколько столбцов. Пытаемся прочитать заголовки --- */
-  const mapping = new Map<number, Field>()
-  let startIndex = 0
-  let headerIndex = -1
-  for (let i = 0; i < Math.min(grid.length, 50); i++) {
-    const candidate = new Map<number, Field>()
-    grid[i].forEach((cell, col) => {
-      const field = matchHeader(cell)
-      if (field && !Array.from(candidate.values()).includes(field)) candidate.set(col, field)
-    })
-    if (Array.from(candidate.values()).includes('full_name') && Array.from(candidate.values()).includes('job_title')) {
-      candidate.forEach((field, col) => mapping.set(col, field))
-      headerIndex = i
-      break
-    }
-  }
+  const suggestion = configured ?? suggestImportMapping(grid)
+  const mapping = new Map<number, Field>(Object.entries(suggestion.columns).filter(([, column]) => column !== undefined).map(([field, column]) => [column, field as Field]))
+  const startIndex = suggestion.startRow
+  const headerIndex = suggestion.headerRow ?? -1
   if (headerIndex >= 0) {
-    startIndex = headerIndex + 1
     notes.push(`Заголовки столбцов распознаны в строке ${headerIndex + 1}. Строки выше пропущены.`)
   } else {
-    /* --- Заголовков нет: определяем столбцы по содержимому --- */
-    mapping.clear()
-    const scores = Array.from({ length: width }, (_, col) => {
-      const cells = grid.map((r) => r[col] ?? '').filter((c) => c !== '')
-      if (cells.length === 0) return { col, name: 0, title: 0, avgLen: 0 }
-      return {
-        col,
-        name: cells.filter(looksLikeName).length / cells.length,
-        title: cells.filter(looksLikeTitle).length / cells.length,
-        avgLen: cells.reduce((s, c) => s + c.length, 0) / cells.length,
-      }
-    })
-
-    const nameCol = [...scores].sort((a, b) => b.name - a.name)[0]
-    if (nameCol && nameCol.name >= 0.5) mapping.set(nameCol.col, 'full_name')
-
-    const titleCol = [...scores]
-      .filter((s) => !mapping.has(s.col))
-      .sort((a, b) => b.title - a.title)[0]
-    if (titleCol && titleCol.title >= 0.25) mapping.set(titleCol.col, 'job_title')
-
-    const rest = scores.filter((s) => !mapping.has(s.col) && s.avgLen > 0)
-    const byLen = [...rest].sort((a, b) => a.avgLen - b.avgLen)
-    if (byLen[0]) mapping.set(byLen[0].col, 'department')          // самый короткий = отдел
-    if (byLen.length > 1) mapping.set(byLen[byLen.length - 1].col, 'description')
-
-    notes.push('Заголовков в файле нет, столбцы определены по содержимому. Проверьте результат внимательно.')
+    notes.push(configured ? `Столбцы выбраны вручную. Данные начинаются со строки ${startIndex + 1}.` : 'Заголовков в файле нет, столбцы определены по содержимому. Проверьте результат внимательно.')
   }
 
   const rows: ParsedRow[] = []
@@ -314,6 +279,7 @@ function matrixToRows(matrix: string[][], notes: string[]): ParsedRow[] {
     const filled = raw.filter((c) => c !== '')
     if (!filled.length) continue
     if (headerIndex >= 0 && Array.from(mapping).every(([col, field]) => matchHeader(raw[col] ?? '') === field)) continue
+    if (configured && headerIndex >= 0 && Array.from(mapping.keys()).every(col => clean(raw[col]) === clean(grid[headerIndex]?.[col]))) continue
 
     // Shared reception/office phone records are contacts, not employee roles.
     if (headerIndex >= 0 && filled.some(c => /^(?:reception|ресепш[еи]н|при[её]мная|телефон офиса)(?:\s|:|$)/i.test(c)) &&
@@ -391,6 +357,63 @@ export function parseEmployeeMatrix(matrix: string[][]): ParseResult {
   const notes: string[] = []
   const rows = matrixToRows(matrix, notes)
   return { rows, notes }
+}
+
+/** Suggestions share the same header/content rules as the existing automatic parser. */
+export function suggestImportMapping(matrix: string[][]): ImportMapping {
+  const grid = matrix.map(row => row.map(clean))
+  for (let index = 0; index < Math.min(grid.length, 50); index++) {
+    const columns: ImportMapping['columns'] = {}
+    grid[index].forEach((cell, column) => {
+      const field = matchHeader(cell)
+      if (field && columns[field] === undefined) columns[field] = column
+    })
+    if (columns.full_name !== undefined && columns.job_title !== undefined) return { columns, headerRow: index, startRow: index + 1 }
+  }
+  const width = Math.max(0, ...grid.map(row => row.length))
+  const scores = Array.from({ length: width }, (_, column) => {
+    const cells = grid.map(row => row[column] ?? '').filter(Boolean)
+    return { column, name: cells.length ? cells.filter(looksLikeName).length / cells.length : 0,
+      title: cells.length ? cells.filter(looksLikeTitle).length / cells.length : 0,
+      avgLen: cells.length ? cells.reduce((sum, cell) => sum + cell.length, 0) / cells.length : 0 }
+  })
+  const columns: ImportMapping['columns'] = {}
+  const name = [...scores].sort((a, b) => b.name - a.name)[0]
+  if (name?.name >= 0.5) columns.full_name = name.column
+  const title = scores.filter(score => score.column !== columns.full_name).sort((a, b) => b.title - a.title)[0]
+  if (title?.title >= 0.25) columns.job_title = title.column
+  const rest = scores.filter(score => !Object.values(columns).includes(score.column) && score.avgLen > 0).sort((a, b) => a.avgLen - b.avgLen)
+  if (rest[0]) columns.department = rest[0].column
+  if (rest.length > 1) columns.description = rest[rest.length - 1].column
+  return { columns, headerRow: null, startRow: 0 }
+}
+
+export function parseMappedEmployeeMatrix(matrix: string[][], mapping: ImportMapping): ParseResult {
+  const width = Math.max(0, ...matrix.map(row => row.length))
+  const selected = Object.values(mapping.columns).filter((column): column is number => column !== undefined)
+  if (mapping.columns.full_name === undefined || mapping.columns.job_title === undefined) throw new Error('Выберите столбцы ФИО и должности.')
+  if (new Set(selected).size !== selected.length) throw new Error('Для каждого поля выберите отдельный столбец.')
+  if (selected.some(column => !Number.isInteger(column) || column < 0 || column >= width)) throw new Error('Выбранного столбца нет на этом листе.')
+  if (!Number.isInteger(mapping.startRow) || mapping.startRow < 0 || mapping.startRow >= matrix.length) throw new Error('Укажите первую строку с данными в пределах листа.')
+  const notes: string[] = []
+  return { rows: matrixToRows(matrix, notes, mapping), notes }
+}
+
+/** Keep all sheets in memory; changing a sheet never rereads or uploads the file. */
+export async function readImportWorkbook(file: File): Promise<ImportSheet[]> {
+  if (/\.csv$/i.test(file.name)) return [{ name: file.name, matrix: parseCsv(await decodeText(file)) }]
+  const XLSX = await import('xlsx')
+  const book = XLSX.read(await file.arrayBuffer(), { type: 'array' })
+  if (!book.SheetNames.length) throw new Error('В файле нет листов.')
+  return book.SheetNames.map(name => {
+    const sheet = book.Sheets[name]
+    const range = XLSX.utils.decode_range(sheet['!ref'] ?? 'A1')
+    // Keep actual Excel row numbers and letters, including leading empty columns.
+    range.s = { r: 0, c: 0 }
+    return { name, matrix: XLSX.utils.sheet_to_json<string[]>(sheet, {
+      header: 1, blankrows: true, defval: '', raw: false, range,
+    }) }
+  })
 }
 
 /* ====================== ПРОВЕРКА И ПРЕДУПРЕЖДЕНИЯ ===================== */

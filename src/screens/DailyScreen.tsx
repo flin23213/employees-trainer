@@ -4,7 +4,7 @@ import AppHeader from '../components/AppHeader'
 import { useLearning } from '../lib/learning'
 import { makeDailyPlan, nextReviewText, type LearningEmployee } from '../lib/dailyPlan'
 import { recordAnswer } from '../lib/employees'
-import { logAnswer } from '../lib/activity'
+import { getActivityAccount, logAnswer } from '../lib/activity'
 
 export default function DailyScreen() {
   const { rows, answered, loading, error, reload } = useLearning()
@@ -22,10 +22,11 @@ export default function DailyScreen() {
   async function answer(correct: boolean) {
     if (!current || lock.current) return
     lock.current=true; setBusy(true); setProblem('')
+    const userId = getActivityAccount()
     const eventId=events.current.get(current.id) ?? crypto.randomUUID(); events.current.set(current.id,eventId)
     try {
       await recordAnswer(current.id,correct,eventId)
-      logAnswer(correct); if(correct) setCorrectCount(n=>n+1)
+      logAnswer(correct, userId); if(correct) setCorrectCount(n=>n+1)
       setIndex(n=>n+1); setRevealed(false); setFailedAnswer(null)
       if(index+1===(deck?.length ?? 0)) await reload()
     } catch { setFailedAnswer(correct); setProblem('Не удалось подтвердить сохранение. Проверьте соединение и нажмите ту же кнопку ещё раз.') }

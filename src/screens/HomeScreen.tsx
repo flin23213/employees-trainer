@@ -7,6 +7,7 @@ import TodayCard from '../components/TodayCard'
 import LoadError from '../components/LoadError'
 import { useLists, setActiveList } from '../lib/lists'
 import '../styles/journey.css'
+import '../styles/demo.css'
 
 export default function HomeScreen() {
   const { lists, loading, error, reload } = useLists()
@@ -51,6 +52,7 @@ export default function HomeScreen() {
       <p><strong>Внутри списка</strong> можно учиться свободно: карточки, тесты и четыре игры.</p>
       <p><strong>Прогресс</strong> показывает, кого вы уже знаете и с кем стоит потренироваться ещё. Игровые рекорды остаются в разделе игр.</p>
     </div></details>}
+    {!loading && !hasPeople && !error && <Link className="home-example" to="/demo">Попробовать на примере<Icon name="arrow" /></Link>}
     <AuthorLinks />
   </div>
 }

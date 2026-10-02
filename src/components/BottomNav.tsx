@@ -3,7 +3,7 @@ import Icon from './Icon'
 
 export default function BottomNav() {
   const { pathname } = useLocation()
-  if (['/today', '/privacy', '/cards', '/review', '/test'].includes(pathname) || pathname.startsWith('/games/')) return null
+  if (['/today', '/privacy', '/demo', '/cards', '/review', '/test'].includes(pathname) || pathname.startsWith('/games/')) return null
   return <nav className="bottom-nav" aria-label="Основная навигация">
     {[
       { to: '/', label: 'Главная', icon: 'home' },

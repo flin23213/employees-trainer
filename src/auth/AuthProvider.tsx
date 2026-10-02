@@ -5,6 +5,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { disableDeviceReminders } from '../lib/reminders'
+import { setActivityAccount } from '../lib/activity'
 
 type AuthValue = {
   session: Session | null      // null = не вошёл
@@ -23,19 +24,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    let alive = true
+    const applySession = (next: Session | null) => {
+      if (!alive) return
+      setActivityAccount(next?.user.id ?? null)
+      setSession(next)
+    }
     // 1. При запуске: проверяем, не сохранён ли вход с прошлого раза
     supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session)
-      setLoading(false)
+      applySession(data.session)
+      if (alive) setLoading(false)
     })
 
     // 2. Дальше слушаем изменения: вошёл, вышел, обновился токен
     const { data } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      setSession(newSession)
+      applySession(newSession)
     })
 
     // 3. Когда компонент убирается с экрана — отключаем слушателя
-    return () => data.subscription.unsubscribe()
+    return () => { alive = false; data.subscription.unsubscribe(); setActivityAccount(null) }
   }, [])
 
   const signOut = async () => {

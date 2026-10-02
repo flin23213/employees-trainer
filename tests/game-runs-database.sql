@@ -57,7 +57,18 @@ begin
     raise exception 'Duplicate run accepted';
   exception when unique_violation then null; end;
 
-  if (select count(*) from public.game_runs where list_id = owned_list) <> 6 then raise exception 'Own result reads failed'; end if;
+  if (select scope_key from public.game_runs where id = run_id) <> 'all' then raise exception 'Old round scope is not all'; end if;
+  insert into public.game_runs(id, list_id, mode, item_count, elapsed_ms, mistakes, time_limit_s, scope_key) values
+    (gen_random_uuid(), owned_list, 'truth', 4, 8000, 0, 73, repeat('a',64)),
+    (gen_random_uuid(), owned_list, 'truth', 4, 9000, 0, 73, repeat('b',64));
+  if (select count(*) from public.game_runs where list_id = owned_list and scope_key = 'all') <> 6 then raise exception 'Full-list records mixed with scope'; end if;
+  if (select count(*) from public.game_runs where list_id = owned_list and scope_key = repeat('a',64)) <> 1 then raise exception 'Selected scope reads failed'; end if;
+  begin
+    insert into public.game_runs(id, list_id, mode, item_count, elapsed_ms, mistakes, time_limit_s, scope_key)
+      values (gen_random_uuid(), owned_list, 'truth', 4, 9000, 0, 73, 'invalid-scope');
+    raise exception 'Malformed scope accepted';
+  exception when check_violation then null; end;
+  if (select count(*) from public.game_runs where list_id = owned_list) <> 8 then raise exception 'Own result reads failed'; end if;
   perform set_config('request.jwt.claim.sub', other_id::text, true);
   if exists(select 1 from public.game_runs where list_id = owned_list) then raise exception 'Cross-account read'; end if;
   begin
@@ -67,5 +78,5 @@ begin
   exception when insufficient_privilege then null; end;
   execute 'reset role';
 end $$;
-select 'Custom seconds, four modes, bounds, penalties, idempotence and account isolation passed' as verification;
+select 'Custom seconds, four modes, bounds, penalties, idempotence, selected scopes and account isolation passed' as verification;
 rollback;

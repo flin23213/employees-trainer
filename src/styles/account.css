@@ -17,3 +17,13 @@
 .account-feedback { padding:12px; border-radius:var(--radius-sm); background:var(--bg-subtle); }
 .account-signout { margin-top:8px; }
 @media (prefers-reduced-motion:reduce) { .account-data__chevron { transition:none; } }
+.account-install { margin-top:16px; }
+.account-install summary { display:flex; align-items:center; gap:12px; cursor:pointer; list-style:none; }
+.account-install summary::-webkit-details-marker { display:none; }
+.account-install summary > span { flex:1; min-width:0; font-weight:650; }
+.account-install summary small { display:block; margin-top:4px; color:var(--text-muted); font-weight:400; }
+.account-install summary > svg { flex:none; color:var(--primary); }
+.account-install[open] summary > svg:last-child { transform:rotate(90deg); }
+.account-install__body { margin-top:20px; font-size:.9rem; }
+.account-install__body ol { padding-left:22px; }
+.account-install__body li { margin:8px 0; }

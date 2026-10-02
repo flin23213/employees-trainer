@@ -3,17 +3,29 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
 import ListContext from '../components/ListContext'
+import Icon from '../components/Icon'
 import { insertEmployees, useEmployees, type ImportResult } from '../lib/employees'
-import { downloadTemplate, parseFile, revalidate, type ParsedRow } from '../lib/parseEmployees'
+import { downloadTemplate, parseFile, parseEmployeeMatrix, parseMappedEmployeeMatrix, readImportWorkbook, suggestImportMapping, revalidate, type ParsedRow, type ImportMapping, type ImportSheet, type ImportField } from '../lib/parseEmployees'
 import type { EmployeeInput } from '../lib/employees'
 import { parsePhotoText } from '../lib/parsePhotoText'
+import '../styles/import.css'
 
 const orNull = (s: string): string | null => (s.trim() === '' ? null : s.trim())
+const FIELDS: { field: ImportField; label: string; required?: boolean }[] = [
+  { field: 'full_name', label: 'ФИО', required: true }, { field: 'job_title', label: 'Должность', required: true },
+  { field: 'department', label: 'Отдел' }, { field: 'description', label: 'Чем занимается' }, { field: 'notes', label: 'Заметка' },
+]
+function columnName(index: number): string {
+  let name = ''; let number = index + 1
+  while (number > 0) { number--; name = String.fromCharCode(65 + number % 26) + name; number = Math.floor(number / 26) }
+  return name
+}
 
 export default function ImportScreen() {
   const { list, reload } = useEmployees()
   const fileInput = useRef<HTMLInputElement>(null)
   const operation = useRef<AbortController | null>(null)
+  const importLock = useRef(false)
 
   const [fileName, setFileName] = useState('')
   const [rows, setRows] = useState<ParsedRow[]>([])
@@ -24,10 +36,46 @@ export default function ImportScreen() {
   const [result, setResult] = useState<ImportResult | null>(null)
   const [progress, setProgress] = useState('')
   const [photoText, setPhotoText] = useState<string | null>(null)
+  const [sheets, setSheets] = useState<ImportSheet[]>([])
+  const [sheetIndex, setSheetIndex] = useState(0)
+  const [mapping, setMapping] = useState<ImportMapping>({ columns: {}, startRow: 0, headerRow: null })
+  const [mappingPending, setMappingPending] = useState(false)
+  const [filter, setFilter] = useState<'all' | 'problems'>('all')
+  const [expanded, setExpanded] = useState<number | null>(null)
 
   useEffect(() => () => operation.current?.abort(), [])
 
   const existingNames = useMemo(() => list.map((e) => e.full_name), [list])
+  const checkedRows = useMemo(() => revalidate(rows, existingNames), [rows, existingNames])
+  const sheet = sheets[sheetIndex]
+  const columns = Array.from({ length: Math.max(0, ...(sheet?.matrix.map(row => row.length) ?? [])) }, (_, index) => {
+    const heading = mapping.headerRow === null ? '' : sheet?.matrix[mapping.headerRow]?.[index] ?? ''
+    const sample = sheet?.matrix.slice(mapping.startRow).map(row => row[index] ?? '').find(value => value.trim()) ?? ''
+    return { index, label: `${columnName(index)}${heading ? ` · ${heading}` : ''}${sample ? ` — ${sample.slice(0, 55)}` : ''}` }
+  })
+
+  function selectSheet(index: number) {
+    const next = sheets[index]
+    if (!next) return
+    const parsed = parseEmployeeMatrix(next.matrix)
+    setSheetIndex(index); setMapping(suggestImportMapping(next.matrix)); setMappingPending(false)
+    setRows(revalidate(parsed.rows, existingNames)); setNotes(parsed.notes); setExpanded(null); setFilter('all'); setError(null)
+  }
+
+  function applyMapping() {
+    if (!sheet || importing) return
+    try {
+      const parsed = parseMappedEmployeeMatrix(sheet.matrix, mapping)
+      setRows(revalidate(parsed.rows, existingNames)); setNotes(parsed.notes); setMappingPending(false); setExpanded(null); setError(null)
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Не удалось применить столбцы.') }
+  }
+
+  function changeColumn(field: ImportField, value: string) {
+    const next = { ...mapping.columns }
+    if (value === '') delete next[field]
+    else next[field] = Number(value)
+    setMapping({ ...mapping, columns: next }); setMappingPending(true)
+  }
 
   async function handleFile(file: File) {
     if (importing) return
@@ -39,6 +87,7 @@ export default function ImportScreen() {
     setRows([])
     setNotes([])
     setPhotoText(null)
+    setSheets([]); setMappingPending(false); setFilter('all'); setExpanded(null)
     setProgress('Читаю файл…')
     setParsing(true)
     setFileName(file.name)
@@ -55,7 +104,17 @@ export default function ImportScreen() {
         parsed.notes.unshift('Проверьте ФИО и должности: распознавание фотографии может ошибаться.')
       } else {
         if (!/\.(xlsx|xls|xlsm|csv|txt)$/i.test(file.name)) throw new Error('Выберите таблицу, текст или фото JPG, PNG, WebP, BMP.')
-        parsed = await parseFile(file)
+        if (/\.(xlsx|xls|xlsm|csv)$/i.test(file.name)) {
+          const workbook = await readImportWorkbook(file)
+          controller.signal.throwIfAborted()
+          const suggestedIndex = workbook.findIndex(item => {
+            const config = suggestImportMapping(item.matrix)
+            return config.columns.full_name !== undefined && config.columns.job_title !== undefined
+          })
+          const index = Math.max(0, suggestedIndex)
+          setSheets(workbook); setSheetIndex(index); setMapping(suggestImportMapping(workbook[index].matrix))
+          parsed = parseEmployeeMatrix(workbook[index].matrix)
+        } else parsed = await parseFile(file)
       }
       controller.signal.throwIfAborted()
       setRows(revalidate(parsed.rows, existingNames))
@@ -86,13 +145,17 @@ export default function ImportScreen() {
   }
 
   function setAll(include: boolean) {
-    setRows((prev) => prev.map((r) => ({ ...r, include: include && !r.blocking })))
+    setRows(checkedRows.map((r) => ({ ...r, include: include && !r.blocking })))
   }
 
-  const ready = rows.filter((r) => r.include && !r.blocking)
+  const ready = checkedRows.filter((r) => r.include && !r.blocking)
   const skipped = rows.length - ready.length
+  const problems = checkedRows.filter(row => row.problems.length > 0).length
+  const visible = checkedRows.map((row, index) => ({ row, index })).filter(({ row, index }) => filter === 'all' || row.problems.length > 0 || expanded === index)
 
   async function handleImport() {
+    if (importLock.current || parsing || mappingPending || !ready.length) return
+    importLock.current = true
     setImporting(true)
     setError(null)
     try {
@@ -109,16 +172,18 @@ export default function ImportScreen() {
       setNotes([])
       setFileName('')
       setPhotoText(null)
+      setSheets([]); setMappingPending(false); setExpanded(null)
       reload()
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     } finally {
+      importLock.current = false
       setImporting(false)
     }
   }
 
   return (
-    <div className="container container--wide fade-in">
+    <div className="container container--wide fade-in import-page">
       <AppHeader title="Импорт сотрудников" back />
       <ListContext />
 
@@ -164,7 +229,7 @@ export default function ImportScreen() {
             {parsing ? 'Читаю файл...' : 'Выбрать файл'}
           </button>
           <button className="btn btn--ghost" onClick={() => { downloadTemplate().catch(() => setError('Не удалось скачать шаблон. Проверьте интернет.')) }}>
-            ⬇ Скачать шаблон Excel
+            <Icon name="upload" />Скачать шаблон Excel
           </button>
         </div>
         {parsing && <div className="row" role="status" style={{ marginTop: 12 }}>
@@ -179,8 +244,21 @@ export default function ImportScreen() {
         </div>}
 
         {fileName && <p className="small muted" style={{ marginTop: 10 }}>Файл: {fileName}</p>}
-        {error && <div className="card answer-wrong small" style={{ marginTop: 12 }}>{error}</div>}
+        {error && <div className="card answer-wrong small" role="alert" style={{ marginTop: 12 }}>{error}</div>}
       </div>
+
+      {sheet && !parsing && <details className="card import-mapping" open={!/\.csv$/i.test(fileName)}>
+        <summary>Лист и столбцы файла<Icon name="chevron" /></summary>
+        <p className="small muted">Мы предложили соответствие автоматически. Можно изменить его сразу для всего файла; повторное применение заменит правки строк данными файла.</p>
+        <div className="import-mapping__source">
+          <label className="label">Лист<select className="input" value={sheetIndex} disabled={importing} onChange={event => selectSheet(Number(event.target.value))}>{sheets.map((item, index) => <option key={index} value={index}>{item.name}</option>)}</select></label>
+          <label className="label">Первая строка с данными<input className="input" type="number" inputMode="numeric" min={1} max={sheet.matrix.length} step={1} value={Number.isNaN(mapping.startRow) ? '' : mapping.startRow + 1} disabled={importing} onChange={event => { const startRow = event.target.value ? Number(event.target.value) - 1 : NaN; setMapping({ ...mapping, startRow, headerRow: mapping.headerRow ?? (startRow > 0 ? startRow - 1 : null) }); setMappingPending(true) }} /></label>
+        </div>
+        <div className="import-mapping__columns">{FIELDS.slice(0, 3).map(({ field, label, required }) => <label className="label" key={field}>{label}{required ? ' *' : ''}<select className="input" value={mapping.columns[field] ?? ''} disabled={importing} onChange={event => changeColumn(field, event.target.value)}><option value="">{required ? 'Выберите столбец' : 'Не использовать'}</option>{columns.map(column => <option value={column.index} key={column.index}>{column.label}</option>)}</select></label>)}</div>
+        <details className="import-extra-fields"><summary>Описание и заметки</summary><div className="import-mapping__columns">{FIELDS.slice(3).map(({ field, label }) => <label className="label" key={field}>{label}<select className="input" value={mapping.columns[field] ?? ''} disabled={importing} onChange={event => changeColumn(field, event.target.value)}><option value="">Не использовать</option>{columns.map(column => <option value={column.index} key={column.index}>{column.label}</option>)}</select></label>)}</div></details>
+        <button className="btn btn--ghost" disabled={importing || !sheet.matrix.length} onClick={applyMapping}>Применить к файлу</button>
+        {mappingPending && <p className="small import-mapping__pending" role="status">Примените новые столбцы перед импортом.</p>}
+      </details>}
 
       {photoText !== null && !parsing && <details className="card" style={{ marginBottom: 16 }}>
         <summary>Распознанный текст — исправить разбиение строк</summary>
@@ -198,80 +276,42 @@ export default function ImportScreen() {
       {rows.length > 0 && (
         <>
           <div className="card" style={{ marginBottom: 16 }}>
-            <h3>2. Мы распознали следующие данные</h3>
+            <h3>2. Проверьте сотрудников</h3>
             <p className="small">
               Готово к импорту: <strong style={{ color: 'var(--success)' }}>{ready.length}</strong>
               {skipped > 0 && <> · будет пропущено: <strong style={{ color: 'var(--danger)' }}>{skipped}</strong></>}
             </p>
+            {photoText !== null && <p className="small muted">Проверьте ФИО и должности: распознавание фотографии может ошибаться.</p>}
 
             {notes.length > 0 && (
-              <ul className="small muted" style={{ paddingLeft: 18, marginBottom: 10 }}>
-                {notes.map((n, i) => <li key={i}>{n}</li>)}
-              </ul>
+              <details className="import-notes"><summary>Замечания к файлу · {notes.length}</summary><ul className="small muted">{notes.map((n, i) => <li key={i}>{n}</li>)}</ul></details>
             )}
 
             <div className="row">
-              <button className="btn btn--sm btn--ghost" onClick={() => setAll(true)}>Выбрать все</button>
-              <button className="btn btn--sm btn--ghost" onClick={() => setAll(false)}>Снять все</button>
+              <button className="btn btn--sm btn--ghost" disabled={importing} onClick={() => setAll(true)}>Выбрать все</button>
+              <button className="btn btn--sm btn--ghost" disabled={importing} onClick={() => setAll(false)}>Снять все</button>
             </div>
+            <div className="library-tabs import-filters" role="group" aria-label="Какие строки показать"><button disabled={importing} aria-pressed={filter === 'all'} className={filter === 'all' ? 'is-active' : ''} onClick={() => setFilter('all')}>Все · {rows.length}</button><button disabled={importing} aria-pressed={filter === 'problems'} className={filter === 'problems' ? 'is-active' : ''} onClick={() => setFilter('problems')}>Нужно проверить · {problems}</button></div>
+            <p className="small muted import-filter-hint">Фильтр меняет только отображение. Импортируются все выбранные строки без блокирующих ошибок.</p>
           </div>
 
-          <div className="stack" style={{ marginBottom: 16 }}>
-            {rows.map((row, index) => (
-              <div
-                className={`card${row.blocking ? ' answer-wrong' : row.problems.length ? ' answer-almost' : ''}`}
-                key={index}
-              >
-                <div className="row" style={{ justifyContent: 'space-between', marginBottom: 10 }}>
-                  <label className="row small" style={{ gap: 8, cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={row.include}
-                      disabled={row.blocking}
-                      onChange={() => toggleRow(index)}
-                      style={{ width: 22, height: 22 }}
-                    />
-                    <span className="muted">строка {row.line}</span>
-                  </label>
-                  {row.problems.length > 0 && (
-                    <span className={row.blocking ? 'badge badge--weak' : 'badge badge--learn'}>
-                      {row.problems.join(' · ')}
-                    </span>
-                  )}
-                </div>
-
-                <div className="grid grid-2">
-                  <div>
-                    <label className="label">ФИО *</label>
-                    <input className="input" value={row.full_name}
-                           onChange={(e) => editRow(index, 'full_name', e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="label">Должность *</label>
-                    <input className="input" value={row.job_title}
-                           onChange={(e) => editRow(index, 'job_title', e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="label">Отдел</label>
-                    <input className="input" value={row.department}
-                           onChange={(e) => editRow(index, 'department', e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="label">Чем занимается</label>
-                    <input className="input" value={row.description}
-                           onChange={(e) => editRow(index, 'description', e.target.value)} />
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div className="import-rows">
+            {visible.map(({ row, index }) => <article className={`import-row${row.blocking ? ' import-row--blocked' : row.problems.length ? ' import-row--warning' : ''}`} key={index}>
+              <input type="checkbox" checked={row.include} disabled={row.blocking || importing} onChange={() => toggleRow(index)} aria-label={`Включить строку ${row.line}: ${row.full_name || 'нет ФИО'}`} />
+              <details open={expanded === index} onToggle={event => { const open = event.currentTarget.open; setExpanded(previous => open ? index : previous === index ? null : previous) }}>
+                <summary><span><strong>{row.full_name || `Строка ${row.line}: нет ФИО`}</strong><span className="import-row__role">{row.job_title || 'Нет должности'}{row.department ? ` · ${row.department}` : ''}</span><span className="import-row__number">Строка {row.line} · Изменить</span>{row.problems.length > 0 && <span className="import-row__problems">{row.problems.join(' · ')}</span>}</span><Icon name="chevron" /></summary>
+                <div className="import-row__fields">{FIELDS.map(({ field, label, required }) => <label className="label" key={field}>{label}{required ? ' *' : ''}{field === 'full_name' || field === 'department' ? <input className="input" value={row[field]} disabled={importing} onChange={event => editRow(index, field, event.target.value)} /> : <textarea className="input" rows={2} value={row[field]} disabled={importing} onChange={event => editRow(index, field, event.target.value)} />}</label>)}</div>
+              </details>
+            </article>)}
+            {!visible.length && <p className="card center muted" role="status">Строк с замечаниями нет. Можно проверить все строки или импортировать выбранных сотрудников.</p>}
           </div>
 
           {/* --- Шаг 3: импорт --- */}
-          <div className="card" style={{ position: 'sticky', bottom: 12 }}>
+          <div className="card import-submit">
             <button
               className="btn btn--primary btn--block btn--lg"
               onClick={handleImport}
-              disabled={importing || parsing || ready.length === 0}
+              disabled={importing || parsing || mappingPending || ready.length === 0}
             >
               {importing ? 'Импортирую...' : `Импортировать ${ready.length} сотрудников`}
             </button>

@@ -1,0 +1,26 @@
+.training-scope { border:1px solid var(--border); border-radius:var(--radius-sm); margin-bottom:20px; text-align:left; min-width:0; }
+.training-scope summary { display:flex; align-items:center; gap:12px; padding:14px 16px; min-height:52px; cursor:pointer; list-style:none; border-radius:var(--radius-sm); }
+.training-scope summary::-webkit-details-marker { display:none; }
+.training-scope summary:focus-visible { outline:3px solid var(--primary); outline-offset:3px; }
+.training-scope summary>span:first-child { flex:1; min-width:0; }
+.training-scope__count { display:block; color:var(--text-muted); font-size:.82rem; margin-top:4px; }
+.training-scope__chevron { display:flex; transition:transform .18s ease; }
+.training-scope[open] .training-scope__chevron { transform:rotate(90deg); }
+.training-scope__body { display:grid; gap:14px; min-width:0; margin:0; padding:16px; border:0; border-top:1px solid var(--border); }
+.training-scope__field { display:grid; gap:7px; min-width:0; font-size:.88rem; font-weight:600; }
+.training-scope__check,.training-scope__person { display:flex; gap:10px; align-items:flex-start; cursor:pointer; min-width:0; font-size:.88rem; }
+.training-scope input[type=checkbox] { flex:none; width:18px; height:18px; margin:2px 0; accent-color:var(--primary); }
+.training-scope__check span,.training-scope__person span { min-width:0; overflow-wrap:anywhere; }
+.training-scope__check small,.training-scope__person small { display:block; margin-top:3px; color:var(--text-muted); font-weight:400; font-size:.8rem; }
+.training-scope__people { display:grid; gap:12px; min-width:0; }
+.training-scope__actions { display:flex; flex-wrap:wrap; gap:8px; }
+.training-scope__actions .btn { font-size:.8rem; white-space:normal; }
+.training-scope__list { max-height:270px; overflow:auto; overscroll-behavior:contain; border:1px solid var(--border); border-radius:var(--radius-sm); }
+.training-scope__list>p { padding:12px; }
+.training-scope__person { padding:10px 12px; }
+.training-scope__person+.training-scope__person { border-top:1px solid var(--border); }
+.training-scope__reset { justify-self:start; white-space:normal; font-size:.84rem; }
+.training-scope__alert { display:grid; gap:10px; }
+.training-scope__alert .btn { justify-self:start; }
+.training-scope__composition { font-size:.8rem; }
+@media(prefers-reduced-motion:reduce) { .training-scope__chevron { transition:none; } }

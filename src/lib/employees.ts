@@ -1,6 +1,7 @@
 // Путь: src/lib/employees.ts
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from './supabase'
+import { getActivityAccount, notifyActivitySaved } from './activity'
 import type { EmployeeWithProgress, Stats } from '../types'
 
 /** Забираем всех сотрудников с прогрессом, по алфавиту */
@@ -158,12 +159,14 @@ export async function insertEmployees(rows: EmployeeInput[]): Promise<ImportResu
  * record_answer внутри базы, поэтому испортить статистику из браузера нельзя.
  */
 export async function recordAnswer(employeeId: string, correct: boolean, eventId: string = crypto.randomUUID()): Promise<void> {
+  const userId = getActivityAccount()
   const { error } = await supabase.rpc('record_answer', {
     p_employee_id: employeeId,
     p_correct: correct,
     p_event_id: eventId,
   })
   if (error) throw new Error(friendlyDbError(error.message, error.code))
+  notifyActivitySaved(userId)
 }
 
 /** Перемешать массив (алгоритм Фишера-Йетса) */
