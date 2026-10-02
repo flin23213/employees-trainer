@@ -1,9 +1,18 @@
 /* Единое оформление приложения: тема, общие элементы и экраны. */
 /* Библиотека и игровые занятия используют те же переменные темы. */
 .container.library-page { max-width: 1000px; }
-.app-shell { height:100vh; height:100dvh; display:grid; grid-template-rows:minmax(0,1fr) auto; overflow:hidden; }
-.app-content { min-height:0; min-width:0; overflow:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; }
+.app-shell { --nav-space:0px; height:100vh; height:100dvh; position:relative; overflow:hidden; }
+.app-shell:has(.bottom-nav) { --nav-space:calc(104px + var(--safe-bottom)); }
+.app-content { height:100%; min-height:0; min-width:0; overflow:auto; padding-bottom:var(--nav-space); scroll-padding-bottom:var(--nav-space); overscroll-behavior:contain; -webkit-overflow-scrolling:touch; }
 .no-scroll .app-content { overflow:hidden; }
+.app-header { display:flex; align-items:center; gap:12px; margin-bottom:24px; }
+.app-header h1 { flex:1; min-width:0; margin:0; font-size:1.4rem; overflow-wrap:anywhere; letter-spacing:-.02em; }
+.app-header--back h1 { font-size:1.2rem; }
+.app-header > button { flex:none; }
+.app-header__back { width:40px; height:40px; padding:8px; }
+.app-header__back svg { transform:rotate(180deg); width:20px; height:20px; }
+.load-error { margin-bottom:16px; }
+.load-error > p { overflow-wrap:anywhere; }
 .library-search { display:flex; align-items:center; gap:12px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:24px; padding:14px 18px; margin:24px 0 30px; color:var(--text-muted); }
 .library-search input { min-width:0; flex:1; border:0; outline:0; background:transparent; color:var(--text); font:inherit; }
 .library-search:focus-within { outline:2px solid var(--primary); outline-offset:3px; }
@@ -46,7 +55,7 @@
 .library-tabs button.is-active { border-color:var(--primary); background:var(--primary-soft); color:var(--primary); }
 .empty-library { padding:50px 24px; text-align:center; }
 .empty-library > svg { width:48px; height:48px; color:var(--primary); }
-.bottom-nav { width:calc(100% - 24px); max-width:580px; margin:8px auto calc(12px + var(--safe-bottom)); display:flex; gap:4px; padding:8px; border-radius:28px; border:1px solid var(--border); background:var(--bg-elevated); box-shadow:var(--shadow); }
+.bottom-nav { position:absolute; z-index:40; left:50%; bottom:calc(12px + var(--safe-bottom)); transform:translateX(-50%); width:calc(100% - 24px); max-width:580px; margin:0; display:flex; gap:4px; padding:8px; border-radius:28px; border:1px solid var(--border); background:var(--bg-elevated); box-shadow:var(--shadow); }
 .bottom-nav__item { display:flex; flex:1; flex-direction:column; align-items:center; gap:4px; color:var(--text-muted); padding:8px 2px; border-radius:22px; font-size:.72rem; font-weight:650; }
 .bottom-nav__item.is-active { color:var(--primary); background:var(--primary-soft); }
 .bottom-nav__item svg { width:24px; height:24px; }

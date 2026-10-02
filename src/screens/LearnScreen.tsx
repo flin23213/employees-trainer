@@ -1,119 +1,34 @@
-// Путь: src/screens/LearnScreen.tsx
-// Развилка «Начать обучение»: сначала выбираете ВИД занятия, потом настройки.
-
 import Icon from '../components/Icon'
 import { Link } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
+import LoadError from '../components/LoadError'
 import { computeStats, useEmployees } from '../lib/employees'
 import { useLists } from '../lib/lists'
+import '../styles/journey.css'
 
 export default function LearnScreen() {
-  const { list, loading } = useEmployees()
+  const { list, loading, error, reload } = useEmployees()
+  const { active, loading: listsLoading, error: listsError, reload: reloadLists } = useLists()
   const s = computeStats(list)
-  const { active } = useLists()
-
-  if (!loading && s.total === 0) {
-    return (
-      <div className="container">
-        <AppHeader title="Начать обучение" back />
-        <div className="card card--pad-lg center">
-          <p className="brief__icon" aria-hidden="true"><Icon name="library" /></p>
-          <p><strong>Пока некого учить</strong></p>
-          <p className="muted small">Добавьте сотрудников — и здесь появятся занятия.</p>
-          <div className="stack">
-            <Link to="/import" className="btn btn--primary">Загрузить из файла</Link>
-            <Link to="/employees" className="btn">Добавить вручную</Link>
-          </div>
-        </div>
+  const starting = s.fresh > 0 || s.total === 0
+  return <div className="container library-page study-hub">
+    <AppHeader title="Занятия" back />
+    <div className="current-module study-context"><Icon name="library" /><span>{active?.name ?? 'Список не выбран'}</span><Link to="/library">Сменить</Link></div>
+    {(error || listsError) && <LoadError message={error || listsError!} onRetry={() => { void reload(); void reloadLists() }} />}
+    {loading || listsLoading ? <p className="card" role="status">Подбираю варианты занятий…</p> : error || listsError ? null : s.total === 0 ? <section className="module-card center">
+      <h2>Начнём с сотрудников</h2><p className="muted">Добавьте имена и должности в этот список — затем сможете учиться любым способом.</p>
+      <Link to="/import" className="btn btn--primary btn--block">Добавить сотрудников</Link>
+    </section> : <>
+      <div className="study-intro"><h2>Запомнить или проверить?</h2><p className="muted">{starting ? 'Начните с карточек. Когда освоитесь, проверьте себя тестом.' : 'Продолжайте с карточками или проверьте, кого уже знаете.'}</p></div>
+      <div className="study-modes">
+        <Link to="/cards" className={`study-mode${starting ? ' study-mode--suggested' : ''}`}><Icon name="cards" /><h3>Карточки</h3>{starting && <span className="eyebrow">РЕКОМЕНДУЕМ ДЛЯ НАЧАЛА</span>}<p>Вспомните должность, откройте ответ и отметьте «Знаю» или «Не знаю». Можно нажимать кнопки или свайпать.</p><span className="study-mode__cta">Запоминать<Icon name="arrow" /></span></Link>
+        <Link to="/test" className="study-mode"><Icon name="check" /><h3>Тест</h3><p>Ответьте на вопросы об именах и должностях. Выберите варианты или впишите ответ самостоятельно.</p><span className="study-mode__cta">Проверить себя<Icon name="arrow" /></span></Link>
       </div>
-    )
-  }
-
-  return (
-    <div className="container">
-      <AppHeader title={active?.name ?? 'Карточки и тесты'} back />
-
-      <div className="stagger">
-        <div className="card card--pad-lg brief__head">
-          <span className="brief__icon" aria-hidden="true"><Icon name="cards" /></span>
-          <h2 className="brief__title">Чем займёмся?</h2>
-          <p className="brief__what">
-            Начните с карточек, чтобы запомнить сотрудников. Затем проверьте себя тестом или игрой на время.
-          </p>
-        </div>
-
-        {/* ---------- Две большие живые плитки ---------- */}
-        <div className="pick" style={{ marginTop: 16 }}>
-          <Link to="/cards" className="pick__card pick__card--cards">
-            <span className="pick__shine" aria-hidden="true" />
-            <span className="pick__icon" aria-hidden="true"><Icon name="cards" /></span>
-            <span className="pick__title">Карточки</span>
-            <span className="pick__tag">узнавание · быстро</span>
-            <ul className="pick__list">
-              <li>Видите ФИО — вспоминаете должность</li>
-              <li>Свайп вправо «знаю», влево «не знаю»</li>
-              <li>Ничего не надо печатать</li>
-              <li>5 минут в перерыве</li>
-            </ul>
-            <span className="pick__go">Выбрать →</span>
-          </Link>
-
-          <Link to="/test" className="pick__card pick__card--test">
-            <span className="pick__shine" aria-hidden="true" />
-            <span className="pick__icon" aria-hidden="true"><Icon name="check" /></span>
-            <span className="pick__title">Тест</span>
-            <span className="pick__tag">припоминание · надёжно</span>
-            <ul className="pick__list">
-              <li>Ответ нужно вписать или выбрать</li>
-              <li>Опечатки прощаются</li>
-              <li>Показывает реальный уровень</li>
-              <li>Запоминается крепче всего</li>
-            </ul>
-            <span className="pick__go">Выбрать →</span>
-          </Link>
-        </div>
-
-        {/* ---------- Дополнительно ---------- */}
-        <div className="section">
-          <h3 className="section__title">Ещё варианты</h3>
-        </div>
-
-        <div className="stack">
-          <Link to="/games" className="action"><span className="action__icon" aria-hidden="true"><Icon name="games" /></span><span className="action__body"><span className="action__title">Игры и личные рекорды</span><span className="action__desc">Сопоставляйте пары и отвечайте на время</span></span><span className="action__chev">→</span></Link>
-          <Link to="/review" className="action">
-            <span className="action__icon" aria-hidden="true"><Icon name="repeat" /></span>
-            <span className="action__body">
-              <span className="action__title">
-                Повторить ошибки {s.weak > 0 && <span className="pill">{s.weak}</span>}
-              </span>
-              <span className="action__desc">
-                {s.weak > 0
-                  ? 'Только те, кого вы путаете. Самый быстрый способ поднять процент.'
-                  : 'Сейчас пусто: ошибок нет. Появятся — соберутся здесь.'}
-              </span>
-            </span>
-            <span className="action__chev" aria-hidden="true">→</span>
-          </Link>
-
-          {s.fresh > 0 && (
-            <Link to="/insight/new" className="action">
-              <span className="action__icon" aria-hidden="true"><Icon name="plus" /></span>
-              <span className="action__body">
-                <span className="action__title">
-                  Ещё не изучены <span className="pill pill--soft">{s.fresh}</span>
-                </span>
-                <span className="action__desc">Посмотреть, кого вы вообще не видели.</span>
-              </span>
-              <span className="action__chev" aria-hidden="true">→</span>
-            </Link>
-          )}
-        </div>
-
-        <p className="muted small center" style={{ marginTop: 20 }}>
-          Не знаете, что выбрать? Берите карточки, если только знакомитесь со списком,
-          и тест, если хотите проверить себя перед встречей.
-        </p>
+      <div className="study-secondary">
+        {s.weak > 0 && <Link to="/review"><Icon name="repeat" /><span><strong>Повторить слабые места · {s.weak}</strong><small>Только сотрудники, с которыми были ошибки</small></span><Icon name="chevron" /></Link>}
+        <Link to="/games"><Icon name="games" /><span><strong>Четыре игры</strong><small>Находите пары, тренируйте память и улучшайте свой рекорд</small></span><Icon name="chevron" /></Link>
       </div>
-    </div>
-  )
+      <details className="journey-help"><summary>Как сохраняется прогресс<Icon name="chevron" /></summary><div><p>Ответы в карточках и тестах обновляют прогресс этого списка. Результаты игр хранятся отдельно как личные рекорды.</p><p>Чтобы повторять сотрудников по расписанию из всей библиотеки, откройте <Link to="/today">занятие на сегодня</Link>.</p></div></details>
+    </>}
+  </div>
 }

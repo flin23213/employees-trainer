@@ -1,8 +1,8 @@
 // Путь: src/screens/ListsScreen.tsx
-// Профили списков: выбор, создание, переименование, прогресс, очистка, удаление.
+// Списки: выбор, создание, переименование, прогресс, очистка, удаление.
 //
 // Главная мысль экрана: человек в любой момент видит, ЧЕМ он сейчас занимается.
-// Сверху — крупная плашка активного профиля, ниже — все профили с кружком
+// Сверху — крупная плашка активного списка, ниже — все списки с кружком
 // выбора (как в настройках телефона) и полоской прогресса у каждого.
 
 import Icon from '../components/Icon'
@@ -14,7 +14,7 @@ import {
   resetListProgress, resetProgressEverywhere, setActiveList, useLists, type ListInfo,
 } from '../lib/lists'
 
-/** Выбор значка профиля */
+/** Выбор значка списка */
 function EmojiPicker({ value, onPick }: { value: string; onPick: (e: string) => void }) {
   return (
     <div className="emoji-row">
@@ -45,7 +45,7 @@ function Bar({ percent }: { percent: number }) {
   )
 }
 
-/** Сворачивающееся объяснение «что такое профиль» */
+/** Сворачивающееся объяснение «что такое список» */
 function AboutProfiles() {
   const [open, setOpen] = useState(false)
 
@@ -54,7 +54,7 @@ function AboutProfiles() {
       <button className="fold__head" onClick={() => setOpen(!open)} aria-expanded={open}>
         <span className="fold__icon" aria-hidden="true"><Icon name="library" /></span>
         <span style={{ flex: 1, minWidth: 0 }}>
-          <span className="fold__title">Что такое профиль списка</span>
+          <span className="fold__title">Как устроены списки</span>
           <span className="fold__sub">Зачем их несколько и что происходит при переключении</span>
         </span>
         <span className={'fold__chev' + (open ? ' is-open' : '')} aria-hidden="true">⌄</span>
@@ -65,11 +65,11 @@ function AboutProfiles() {
           <ol className="steps">
             <li>
               <span className="steps__num">1</span>
-              <span><strong>Профиль — это отдельный список людей.</strong> Например «Мой отдел», «Соседний филиал», «Новички». У каждого свой прогресс.</span>
+              <span><strong>Список объединяет вашу команду.</strong> Например «Мой отдел», «Соседний филиал», «Новички». У каждого свой прогресс.</span>
             </li>
             <li>
               <span className="steps__num">2</span>
-              <span><strong>Активен всегда один.</strong> Карточки, тесты, статистика и импорт работают с тем профилем, который выбран здесь.</span>
+              <span><strong>Активен всегда один.</strong> Карточки, тесты, игры и импорт работают с текущим списком. Занятие на сегодня собирает повторения из всей библиотеки.</span>
             </li>
             <li>
               <span className="steps__num">3</span>
@@ -77,7 +77,7 @@ function AboutProfiles() {
             </li>
             <li>
               <span className="steps__num">4</span>
-              <span><strong>Делиться можно любым профилем.</strong> Код приглашения создаётся из того списка, который вы выберете.</span>
+              <span><strong>Делиться можно любым списком.</strong> Код приглашения создаётся из того списка, который вы выберете.</span>
             </li>
           </ol>
         </div>
@@ -129,12 +129,12 @@ export default function ListsScreen() {
     setNote(null)
   }
 
-  /** Переключиться на профиль + короткая подсветка, чтобы было видно, что сменили */
+  /** Переключиться на список + короткая подсветка, чтобы было видно, что сменили */
   function pick(l: ListInfo) {
     if (l.is_active) return
     setFlashId(l.id)
     window.setTimeout(() => setFlashId(null), 600)
-    void run(() => setActiveList(l.id), `Активный профиль: «${l.name}». Все занятия теперь по этому списку.`)
+    void run(() => setActiveList(l.id), `Текущий список: «${l.name}». Свободные занятия теперь по этому списку.`)
   }
 
   return (
@@ -162,7 +162,7 @@ export default function ListsScreen() {
 
               <Bar percent={active.percent} />
               <p className="muted small" style={{ margin: 0 }}>
-                Прогресс профиля: {active.percent}%
+                Прогресс списка: {active.percent}%
                 {active.answers > 0 ? ` · точность ${active.avg_accuracy}%` : ' · занятий пока не было'}
               </p>
 
@@ -177,11 +177,11 @@ export default function ListsScreen() {
           {problem && <div className="card answer-wrong small shake" style={{ marginTop: 12 }}>{problem}</div>}
           {note && <div className="card answer-correct small" style={{ marginTop: 12 }}>{note}</div>}
 
-          {/* ================= 2. ВСЕ ПРОФИЛИ ================= */}
+          {/* ================= 2. ВСЕ СПИСКИ ================= */}
           <div className="section">
-            <h3 className="section__title">Все профили · {lists.length}</h3>
+            <h3 className="section__title">Все списки · {lists.length}</h3>
             <p className="section__sub">
-              Нажмите на профиль, чтобы переключиться на него. Галочка слева показывает, какой активен.
+              Нажмите на список, чтобы переключиться на него. Галочка слева показывает, какой активен.
             </p>
           </div>
 
@@ -215,7 +215,7 @@ export default function ListsScreen() {
                         disabled={busy || editName.trim() === ''}
                         onClick={() => void run(
                           async () => { await renameList(l.id, editName, editEmoji); setEditId(null) },
-                          'Профиль переименован.'
+                          'Список переименован.'
                         )}
                       >
                         Сохранить
@@ -227,7 +227,7 @@ export default function ListsScreen() {
                   </div>
                 ) : (
                   <>
-                    {/* ---------- выбор профиля ---------- */}
+                    {/* ---------- выбор списка ---------- */}
                     <button
                       className="lcard__pick"
                       disabled={busy || l.is_active}
@@ -254,7 +254,7 @@ export default function ListsScreen() {
                         )}
 
                         <span className="muted small" style={{ display: 'block', marginTop: 6 }}>
-                          {l.employee_count === 0 ? 'профиль пустой' : lastStudiedText(l.last_studied)}
+                          {l.employee_count === 0 ? 'список пустой' : lastStudiedText(l.last_studied)}
                         </span>
                       </span>
 
@@ -265,13 +265,13 @@ export default function ListsScreen() {
                       </span>
                     </button>
 
-                    {/* ---------- управление профилем ---------- */}
+                    {/* ---------- управление списком ---------- */}
                     <button
                       className="lcard__more"
                       onClick={() => setOpenActs(openActs === l.id ? null : l.id)}
                       aria-expanded={openActs === l.id}
                     >
-                      {openActs === l.id ? 'Скрыть управление ⌃' : 'Управление профилем ⌄'}
+                      {openActs === l.id ? 'Скрыть управление ⌃' : 'Управление списком ⌄'}
                     </button>
 
                     {openActs === l.id && (
@@ -287,16 +287,16 @@ export default function ListsScreen() {
                         <button
                           className="btn btn--sm"
                           disabled={busy || l.answers === 0}
-                          title={l.answers === 0 ? 'В этом профиле ещё нет ответов' : ''}
+                          title={l.answers === 0 ? 'В этом списке ещё нет ответов' : ''}
                           onClick={() => {
                             if (!window.confirm(
-                              `Обнулить прогресс профиля «${l.name}»?\n\n` +
+                              `Обнулить прогресс списка «${l.name}»?\n\n` +
                               `Сотрудники (${l.employee_count} чел.) останутся, но проценты, серии ` +
-                              `и история ответов начнутся с нуля. Другие профили не изменятся.`
+                              `и история ответов начнутся с нуля. Другие списки не изменятся.`
                             )) return
                             void run(async () => {
                               const n = await resetListProgress(l.id)
-                              setNote(`Прогресс профиля «${l.name}» обнулён: ${n} чел. начинают заново.`)
+                              setNote(`Прогресс списка «${l.name}» обнулён: ${n} чел. начинают заново.`)
                             })
                           }}
                         >
@@ -308,12 +308,12 @@ export default function ListsScreen() {
                           disabled={busy || l.employee_count === 0}
                           onClick={() => {
                             if (!window.confirm(
-                              `Удалить всех сотрудников из профиля «${l.name}»?\n\n` +
-                              `Будет удалено: ${l.employee_count} чел. вместе с их прогрессом. Сам профиль останется.`
+                              `Удалить всех сотрудников из списка «${l.name}»?\n\n` +
+                              `Будет удалено: ${l.employee_count} чел. вместе с их прогрессом. Сам список останется.`
                             )) return
                             void run(async () => {
                               const n = await clearList(l.id)
-                              setNote(`Из профиля «${l.name}» удалено ${n} чел.`)
+                              setNote(`Из списка «${l.name}» удалено ${n} чел.`)
                             })
                           }}
                         >
@@ -325,14 +325,14 @@ export default function ListsScreen() {
                         <button
                           className="btn btn--sm btn--ghost"
                           disabled={busy || lists.length <= 1}
-                          title={lists.length <= 1 ? 'Единственный профиль удалить нельзя' : ''}
+                          title={lists.length <= 1 ? 'Единственный список удалить нельзя' : ''}
                           onClick={() => {
                             if (!window.confirm(
-                              `Удалить профиль «${l.name}» полностью?\n\n` +
+                              `Удалить список «${l.name}» полностью?\n\n` +
                               `Вместе с ним исчезнут ${l.employee_count} чел., весь их прогресс ` +
-                              `и коды приглашения этого профиля. Отменить будет нельзя.`
+                              `и коды приглашения этого списка. Отменить будет нельзя.`
                             )) return
-                            void run(() => deleteList(l.id), `Профиль «${l.name}» удалён.`)
+                            void run(() => deleteList(l.id), `Список «${l.name}» удалён.`)
                           }}
                         >
                           Удалить
@@ -347,7 +347,7 @@ export default function ListsScreen() {
 
           {/* ================= 3. НОВЫЙ ПРОФИЛЬ ================= */}
           <div className="section">
-            <h3 className="section__title">Новый профиль</h3>
+            <h3 className="section__title">Новый список</h3>
             <p className="section__sub">Пустой список, который сразу станет активным.</p>
           </div>
 
@@ -382,7 +382,7 @@ export default function ListsScreen() {
                         setNewEmoji('📋')
                         setCreating(false)
                       },
-                      'Профиль создан и выбран активным.'
+                      'Список создан и выбран активным.'
                     )}
                   >
                     Создать
@@ -394,7 +394,7 @@ export default function ListsScreen() {
               </>
             ) : (
               <button className="btn btn--primary btn--block btn--lg" onClick={() => setCreating(true)}>
-                Добавить профиль
+                Добавить список
               </button>
             )}
           </div>
@@ -411,23 +411,22 @@ export default function ListsScreen() {
                 disabled={busy}
                 onClick={() => {
                   if (!window.confirm(
-                    'Обнулить прогресс СРАЗУ ВО ВСЕХ профилях?\n\n' +
+                    'Обнулить прогресс СРАЗУ ВО ВСЕХ списках?\n\n' +
                     'Сотрудники останутся, но вся история ответов исчезнет. Отменить будет нельзя.'
                   )) return
                   void run(async () => {
                     const n = await resetProgressEverywhere()
-                    setNote(`Прогресс обнулён во всех профилях: ${n} чел.`)
+                    setNote(`Прогресс обнулён во всех списках: ${n} чел.`)
                   })
                 }}
               >
-                Сбросить прогресс во всех профилях
+                Сбросить прогресс во всех списках
               </button>
             </p>
           )}
 
           <p className="muted small center" style={{ marginTop: 14 }}>
-            Прогресс, статистика и график считаются отдельно для каждого профиля:
-            переключение ничего не стирает.
+            Прогресс хранится отдельно для каждого списка. Переключение не стирает ваши ответы.
           </p>
         </div>
       )}

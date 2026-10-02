@@ -3,7 +3,7 @@
 // а под ней — плашка активного профиля списка: из любого раздела видно,
 // с каким списком вы сейчас работаете, и можно его сменить в один тап.
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../auth/AuthProvider'
 import { useLists } from '../lib/lists'
@@ -20,12 +20,13 @@ type Props = {
 const GROUPS = [
   {
     id: 'learning', label: 'Обучение', icon: 'cards',
-    paths: ['/today', '/learn', '/cards', '/test', '/review', '/games'],
+    paths: ['/today', '/learn', '/cards', '/test', '/review', '/games', '/stats', '/insight'],
     items: [
       { to: '/today', icon: 'clock', label: 'Занятие на сегодня' },
       { to: '/learn', icon: 'cards', label: 'Карточки и тесты' },
       { to: '/review', icon: 'repeat', label: 'Повторить ошибки' },
       { to: '/games', icon: 'games', label: 'Игры и рекорды' },
+      { to: '/stats', icon: 'chart', label: 'Мой прогресс' },
     ],
   },
   {
@@ -40,12 +41,9 @@ const GROUPS = [
     ],
   },
   {
-    id: 'account', label: 'Аккаунт и настройки', icon: 'settings',
-    paths: ['/profile', '/stats', '/insight'],
-    items: [
-      { to: '/stats', icon: 'chart', label: 'Мой прогресс' },
-      { to: '/profile', icon: 'user', label: 'Профиль и напоминания' },
-    ],
+    id: 'settings', label: 'Настройки', icon: 'settings',
+    paths: ['/profile'],
+    items: [],
   },
 ]
 
@@ -54,23 +52,50 @@ export default function AppMenu({ open, onClose, theme, onToggleTheme }: Props) 
   const { active } = useLists()
   const email = session?.user.email ?? ''
   const { pathname } = useLocation()
+  const drawer = useRef<HTMLElement>(null)
+  const close = useRef(onClose)
+  useEffect(() => { close.current = onClose }, [onClose])
 
-  // Пока меню открыто: Esc закрывает, страница под ним не прокручивается.
+  // Focus stays in the dialog; closed categories have no reachable controls.
   useEffect(() => {
     if (!open) return
+    const menu = drawer.current
+    if (!menu) return
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const visibleControls = () => Array.from(menu.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])'
+    )).filter(control => {
+      if (control.closest('[hidden], [inert], [aria-hidden="true"]') || !control.getClientRects().length || getComputedStyle(control).visibility === 'hidden') return false
+      for (let parent = control.parentElement; parent && parent !== menu; parent = parent.parentElement) {
+        if (parent instanceof HTMLDetailsElement && !parent.open && !parent.querySelector('summary')?.contains(control)) return false
+      }
+      return true
+    })
 
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') { e.preventDefault(); close.current(); return }
+      if (e.key !== 'Tab') return
+      const controls = visibleControls()
+      const first = controls[0]
+      const last = controls[controls.length - 1]
+      const focused = document.activeElement
+      if (!first || !last) { e.preventDefault(); menu!.focus(); return }
+      const outside = !(focused instanceof HTMLElement) || !controls.includes(focused)
+      if (e.shiftKey && (focused === first || outside)) { e.preventDefault(); last.focus() }
+      else if (!e.shiftKey && (focused === last || outside)) { e.preventDefault(); first.focus() }
     }
 
     document.addEventListener('keydown', onKey)
     document.body.classList.add('no-scroll')
+    visibleControls()[0]?.focus()
 
     return () => {
       document.removeEventListener('keydown', onKey)
       document.body.classList.remove('no-scroll')
+      if (previousFocus?.isConnected) previousFocus.focus()
+      else document.querySelector<HTMLElement>('button[aria-label="Открыть меню"]')?.focus()
     }
-  }, [open, onClose])
+  }, [open])
 
   /** Подсветка текущего раздела */
   const itemClass = ({ isActive }: { isActive: boolean }) =>
@@ -84,19 +109,21 @@ export default function AppMenu({ open, onClose, theme, onToggleTheme }: Props) 
         aria-hidden="true"
       />
 
-      <aside className={'drawer' + (open ? ' is-open' : '')} aria-label="Меню" inert={!open} aria-hidden={!open}>
+      <aside ref={drawer} className={'drawer' + (open ? ' is-open' : '')} role="dialog" aria-modal={open || undefined}
+        aria-label="Меню" tabIndex={-1} inert={!open} aria-hidden={!open}>
         <div className="drawer__head">
           {/* Вся плашка — ссылка в профиль */}
           <NavLink
             to="/profile"
             end
+            aria-label="Профиль и напоминания"
             className={({ isActive }) => 'drawer__account' + (isActive ? ' is-active' : '')}
             onClick={onClose}
           >
             <span className="drawer__avatar">{email.charAt(0).toUpperCase() || '?'}</span>
             <span className="drawer__user">
               <span className="drawer__email">{email}</span>
-              <span className="drawer__hint">Ваш аккаунт · открыть профиль</span>
+              <span className="drawer__hint">Профиль и напоминания</span>
             </span>
             <span className="drawer__account-chev"><Icon name="chevron" /></span>
           </NavLink>
@@ -143,7 +170,7 @@ export default function AppMenu({ open, onClose, theme, onToggleTheme }: Props) 
                   <span className="drawer__icon"><Icon name={item.icon} /></span>
                   <span>{item.label}</span>
                 </NavLink>)}
-                {group.id === 'account' && <>
+                {group.id === 'settings' && <>
                   <button type="button" className="drawer__item drawer__theme-switch" role="switch"
                     aria-label="Тёмная тема" aria-checked={theme === 'dark'} onClick={onToggleTheme}>
                     <span className="drawer__icon"><Icon name="moon" /></span>

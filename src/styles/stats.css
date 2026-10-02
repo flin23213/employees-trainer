@@ -1,0 +1,67 @@
+.stats-page { max-width:880px; }
+.stats-page .stats-current-list { display:flex; align-items:center; gap:12px; padding:14px 16px; border:1px solid var(--border); border-radius:16px; background:var(--bg-elevated); margin-bottom:18px; }
+.stats-page .stats-current-list > svg { flex:none; color:var(--primary); }
+.stats-page .stats-current-list > div { flex:1; min-width:0; }
+.stats-page .stats-current-list span { display:block; font-size:.74rem; color:var(--text-muted); margin-bottom:3px; }
+.stats-page .stats-current-list strong { display:block; font-size:.92rem; line-height:1.4; overflow-wrap:anywhere; }
+.stats-page .stats-current-list > a { flex:none; }
+.stats-page .stats-overview { padding:24px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:20px; }
+.stats-page .stats-overview__metrics { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; }
+.stats-page .stats-overview__number { display:block; color:var(--primary); font-size:2.6rem; line-height:1.1; font-weight:750; letter-spacing:-.05em; font-variant-numeric:tabular-nums; }
+.stats-page .stats-overview__number--accuracy { color:var(--text); }
+.stats-page .stats-overview h2 { font-size:.94rem; margin:8px 0 4px; }
+.stats-page .stats-overview p { color:var(--text-muted); font-size:.78rem; line-height:1.5; margin:0; }
+.stats-page .stats-overview__bar { margin:20px 0; height:8px; }
+.stats-page .stats-status-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px 20px; margin:0; }
+.stats-page .stats-status-list > div { display:flex; align-items:center; justify-content:space-between; gap:10px; border-left:3px solid var(--border); padding-left:10px; min-width:0; }
+.stats-page .stats-status-list > div[data-status="known"] { border-color:var(--success); }
+.stats-page .stats-status-list > div[data-status="learning"] { border-color:var(--primary); }
+.stats-page .stats-status-list > div[data-status="weak"] { border-color:var(--danger); }
+.stats-page .stats-status-list dt { font-size:.8rem; line-height:1.4; }
+.stats-page .stats-status-list dd { margin:0; font-size:1.1rem; font-weight:700; font-variant-numeric:tabular-nums; }
+.stats-page .stats-next-step { display:flex; align-items:center; gap:24px; padding:20px 0; margin-bottom:2px; }
+.stats-page .stats-next-step > div { flex:1; min-width:0; }
+.stats-page .stats-next-step h2 { font-size:1.05rem; margin:0 0 6px; }
+.stats-page .stats-next-step p { color:var(--text-muted); font-size:.83rem; line-height:1.5; margin:0; }
+.stats-page .stats-next-step > a { flex:none; }
+.stats-page .stats-details { border:1px solid var(--border); border-radius:16px; background:var(--bg-elevated); margin-top:12px; }
+.stats-page .stats-details > summary { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:18px 20px; cursor:pointer; list-style:none; }
+.stats-page .stats-details > summary::-webkit-details-marker { display:none; }
+.stats-page .stats-details > summary:focus-visible { outline:3px solid var(--primary); outline-offset:3px; border-radius:16px; }
+.stats-page .stats-details__heading { min-width:0; }
+.stats-page .stats-details__heading strong { display:block; font-size:.96rem; line-height:1.4; overflow-wrap:anywhere; }
+.stats-page .stats-details__heading > span { display:block; color:var(--text-muted); font-size:.77rem; line-height:1.4; margin-top:4px; }
+.stats-page .stats-details__action { display:flex; align-items:center; gap:8px; max-width:140px; flex:none; font-size:.75rem; color:var(--primary); line-height:1.4; text-align:right; }
+.stats-page .stats-details__action svg { width:18px; height:18px; flex:none; transform:rotate(90deg); }
+.stats-page .stats-details__open { display:none; }
+.stats-page .stats-details[open] > summary .stats-details__closed { display:none; }
+.stats-page .stats-details[open] > summary .stats-details__open { display:inline; }
+.stats-page .stats-details[open] > summary .stats-details__action svg { transform:rotate(-90deg); }
+.stats-page .stats-details__body { border-top:1px solid var(--border); padding:18px 20px; }
+.stats-page .stats-details__note { margin:0 0 18px; color:var(--text-muted); font-size:.8rem; line-height:1.5; }
+.stats-page .stats-people-list,.stats-page .stats-department-list { list-style:none; margin:0; padding:0; display:grid; gap:20px; }
+.stats-page .stats-people-list > li,.stats-page .stats-department-list > li { min-width:0; }
+.stats-page .stats-people-list > li + li,.stats-page .stats-department-list > li + li { border-top:1px solid var(--border); padding-top:18px; }
+.stats-page .stats-person__heading,.stats-page .stats-department__heading { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
+.stats-page .stats-person__heading > strong,.stats-page .stats-department__heading > strong { min-width:0; font-size:.92rem; line-height:1.5; overflow-wrap:anywhere; }
+.stats-page .stats-person__heading > span,.stats-page .stats-department__heading > span { flex:none; font-size:.85rem; font-weight:700; font-variant-numeric:tabular-nums; }
+.stats-page .stats-people-list p,.stats-page .stats-department__count { margin:4px 0 8px; color:var(--text-muted); font-size:.8rem; line-height:1.5; overflow-wrap:anywhere; }
+.stats-page .stats-people-list .progress,.stats-page .stats-department-list .progress { height:6px; }
+.stats-page .stats-department__metrics { display:flex; flex-wrap:wrap; gap:5px 16px; margin-top:8px; font-size:.75rem; line-height:1.5; color:var(--text-muted); }
+.stats-page .stats-value--weak { color:var(--danger); }
+.stats-page .stats-empty { text-align:center; padding:32px 24px; }
+.stats-page .stats-empty > svg { color:var(--primary); width:40px; height:40px; }
+.stats-page .stats-empty h2 { font-size:1.2rem; }
+@media (max-width:600px) {
+  .stats-page .stats-overview { padding:20px 16px; }
+  .stats-page .stats-overview__metrics { gap:16px; }
+  .stats-page .stats-overview__number { font-size:2.3rem; }
+  .stats-page .stats-status-list { gap:12px; }
+  .stats-page .stats-status-list > div { gap:6px; padding-left:8px; }
+  .stats-page .stats-next-step { display:block; padding:20px 0 8px; }
+  .stats-page .stats-next-step > a { width:100%; margin-top:14px; }
+  .stats-page .stats-details > summary { padding:16px; gap:12px; }
+  .stats-page .stats-details__action { max-width:106px; font-size:.7rem; gap:4px; }
+  .stats-page .stats-details__body { padding:16px; }
+  .stats-page .stats-person__heading,.stats-page .stats-department__heading { gap:10px; }
+}

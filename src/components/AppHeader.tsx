@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AppMenu from './AppMenu'
+import Icon from './Icon'
 
 /** Небольшой хук темы: помнит выбор пользователя между запусками */
 function useTheme() {
@@ -42,21 +43,21 @@ export default function AppHeader({ title, back = false }: Props) {
 
   return (
     <>
-      <div className="row" style={{ marginBottom: 18, gap: 8 }}>
+      <header className={'app-header' + (back ? ' app-header--back' : '')}>
         {back && (
-          <button className="btn btn--ghost btn--sm" onClick={handleBack} aria-label="Назад">
-            ←
+          <button className="btn btn--ghost btn--sm app-header__back" onClick={handleBack} aria-label="Назад">
+            <Icon name="arrow" />
           </button>
         )}
 
-        <h1 className="truncate" style={{ margin: 0, fontSize: back ? '1.2rem' : '1.4rem', flex: 1 }}>
+        <h1>
           {title}
         </h1>
 
         <button className="burger" onClick={() => setMenuOpen(true)} aria-label="Открыть меню">
           <span /><span /><span />
         </button>
-      </div>
+      </header>
 
       <AppMenu
         open={menuOpen}

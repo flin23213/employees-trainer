@@ -1,0 +1,81 @@
+.journey-page .journey-intro { color:var(--text-muted); margin-bottom:24px; }
+.journey-page .today-card { margin-bottom:0; }
+.home-today h2,.home-welcome h2 { font-size:clamp(1.55rem,4vw,2rem); letter-spacing:-.035em; margin:18px 0 12px; }
+.today-duration { display:flex; align-items:center; gap:6px; color:var(--text-muted); font-size:.75rem; white-space:nowrap; }
+.today-duration svg { width:16px; height:16px; }
+.home-today .progress { margin-top:20px; }
+.home-today > .small { margin:8px 0 20px; }
+.today-details { border-top:1px solid var(--border); padding-top:16px; margin-top:20px; text-align:left; }
+.today-details summary,.journey-help summary { cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:12px; list-style:none; font-size:.85rem; color:var(--text-muted); }
+.today-details summary::-webkit-details-marker,.journey-help summary::-webkit-details-marker { display:none; }
+.today-details summary svg,.journey-help summary svg { width:18px; height:18px; flex:none; transition:transform .15s; }
+.today-details[open] summary svg,.journey-help[open] summary svg { transform:rotate(90deg); }
+.today-details summary:focus-visible,.journey-help summary:focus-visible { outline:2px solid var(--primary); outline-offset:4px; border-radius:4px; }
+.today-details > p { margin:14px 0 10px; }
+.today-details > a { font-size:.85rem; }
+.home-welcome > .module-icon { margin-bottom:20px; }
+.home-welcome p { overflow-wrap:anywhere; }
+.journey-steps { padding:0; margin:24px 0; list-style:none; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+.journey-steps li { display:flex; align-items:flex-start; gap:8px; font-size:.8rem; color:var(--text-muted); }
+.journey-steps li > span { width:24px; height:24px; flex:none; display:grid; place-items:center; border:1px solid var(--border); border-radius:50%; color:var(--primary); font-weight:700; }
+.journey-steps .is-complete > span { background:var(--success-soft); border-color:var(--success); color:var(--success); }
+.home-lists .section-heading a { display:flex; align-items:center; gap:6px; }
+.home-lists .section-heading a svg { width:16px; }
+.home-lists .recent-item { border:1px solid var(--border); gap:14px; padding:16px; }
+.home-lists .module-icon { width:44px; height:44px; font-size:20px; border-radius:14px; }
+.home-lists .module-icon svg { width:22px; height:22px; }
+.journey-help { margin:28px 0; padding:18px 20px; border:1px solid var(--border); border-radius:18px; background:var(--bg-elevated); }
+.journey-help > div { font-size:.85rem; color:var(--text-muted); padding-top:18px; }
+.journey-help > div strong { color:var(--text); }
+.journey-help > div p:last-child { margin-bottom:0; }
+.study-hub .study-context { margin:22px 0; }
+.study-hub .study-intro { margin:24px 0; }
+.study-hub .study-intro h2 { font-size:1.6rem; letter-spacing:-.025em; }
+.study-modes { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.study-mode { display:flex; flex-direction:column; padding:24px; border:1px solid var(--border); border-radius:22px; background:var(--bg-elevated); color:var(--text); }
+.study-mode > svg { color:var(--primary); width:30px; height:30px; margin-bottom:20px; }
+.study-mode h3 { font-size:1.25rem; margin-bottom:10px; }
+.study-mode p { font-size:.9rem; color:var(--text-muted); flex:1; }
+.study-mode__cta { color:var(--primary); font-weight:650; display:flex; align-items:center; gap:8px; margin-top:12px; }
+.study-mode__cta svg { width:18px; height:18px; }
+.study-mode--suggested { border-color:var(--primary); background:var(--primary-soft); }
+.study-mode .eyebrow { display:block; color:var(--primary); margin-bottom:8px; }
+.study-secondary { display:grid; gap:12px; margin-top:24px; }
+.study-secondary > a { display:flex; align-items:center; gap:14px; padding:18px; color:var(--text); border:1px solid var(--border); background:var(--bg-elevated); border-radius:18px; }
+.study-secondary > a > svg { color:var(--primary); flex:none; }
+.study-secondary > a > svg:last-child { color:var(--text-muted); width:18px; }
+.study-secondary > a > span { flex:1; min-width:0; }
+.study-secondary strong,.study-secondary small { display:block; }
+.study-secondary small { color:var(--text-muted); margin-top:4px; }
+.list-overview { display:flex; align-items:center; gap:12px; margin:20px 0; }
+.list-overview .module-icon { width:46px; height:46px; }
+.list-overview h1 { margin:0; font-size:1.7rem; overflow-wrap:anywhere; }
+.list-overview > div { min-width:0; }
+.list-overview p { margin:4px 0 0; }
+.list-breadcrumb { display:flex; align-items:center; gap:8px; }
+.list-breadcrumb svg { width:14px; height:14px; color:var(--text-muted); }
+.list-members summary > span:last-child { display:flex; align-items:center; gap:6px; }
+.list-members .section-heading { margin-top:0; flex-wrap:wrap; }
+.list-person > div { min-width:0; overflow-wrap:anywhere; }
+.list-journey { display:grid; grid-template-columns:minmax(0,2fr) minmax(0,1fr); gap:16px; margin:24px 0; }
+.list-journey > section { padding:24px; border:1px solid var(--border); border-radius:22px; background:var(--bg-elevated); }
+.list-journey h2 { font-size:1.3rem; margin:10px 0; }
+.list-journey p { color:var(--text-muted); font-size:.9rem; }
+.list-journey .btn { margin-top:8px; }
+.list-secondary-actions { display:flex; gap:12px; flex-wrap:wrap; margin:20px 0; }
+.list-secondary-actions .btn { flex:1; }
+.list-tools { margin:24px 0; }
+.list-tools[open] summary { margin-bottom:16px; }
+.study-mode,.study-secondary > a { transition:transform .12s, border-color .15s; }
+.study-mode:active,.study-secondary > a:active { transform:scale(.98); }
+@media(hover:hover) { .study-mode:hover,.study-secondary > a:hover { border-color:var(--primary); } }
+@media(max-width:600px) {
+  .home-today .module-card__top { align-items:flex-start; flex-direction:column; gap:8px; }
+  .journey-steps { grid-template-columns:1fr; gap:10px; margin:20px 0; }
+  .journey-steps li { align-items:center; }
+  .study-modes,.list-journey { grid-template-columns:1fr; }
+  .study-mode { padding:20px; }
+  .study-mode > svg { margin-bottom:14px; }
+  .list-journey > section { padding:20px; }
+  .list-secondary-actions { flex-direction:column; }
+}
