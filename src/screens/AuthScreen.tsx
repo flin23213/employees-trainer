@@ -210,11 +210,11 @@ export default function AuthScreen() {
 
           <Reveal delay={80}>
             <div className="auth__chips">
-              <span className="chip">🃏 Карточки со свайпами</span>
-              <span className="chip">✍️ Тесты с проверкой опечаток</span>
-              <span className="chip">📈 График занятий</span>
-              <span className="chip">📂 Импорт из Excel и фото</span>
-              <span className="chip">🤝 Обмен списками по коду</span>
+              <span className="chip">Карточки со свайпами</span>
+              <span className="chip">Тесты с проверкой опечаток</span>
+              <span className="chip">График занятий</span>
+              <span className="chip">Импорт из Excel и фото</span>
+              <span className="chip">Обмен списками по коду</span>
             </div>
           </Reveal>
 
@@ -232,7 +232,7 @@ export default function AuthScreen() {
 
           <Reveal delay={200}>
             <p className="muted small auth__note">
-              🔒 Список сотрудников виден только вам: данные лежат в вашем личном пространстве
+              Список сотрудников виден только вам: данные лежат в вашем личном пространстве
               и защищены на стороне сервера.
             </p>
           </Reveal>
@@ -375,7 +375,7 @@ export default function AuthScreen() {
 
                   <button className={'btn btn--primary btn--block btn--lg' + (busy ? ' is-busy' : '')}
                           type="submit" disabled={busy}>
-                    {busy ? 'Отправляю…' : '📨 Отправить ссылку'}
+                    {busy ? 'Отправляю…' : 'Отправить ссылку'}
                   </button>
                 </form>
 

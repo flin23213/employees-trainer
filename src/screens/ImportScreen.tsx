@@ -161,7 +161,7 @@ export default function ImportScreen() {
 
         <div className="row">
           <button className="btn btn--primary" onClick={() => fileInput.current?.click()} disabled={parsing || importing}>
-            📂 {parsing ? 'Читаю файл...' : 'Выбрать файл'}
+            {parsing ? 'Читаю файл...' : 'Выбрать файл'}
           </button>
           <button className="btn btn--ghost" onClick={() => { downloadTemplate().catch(() => setError('Не удалось скачать шаблон. Проверьте интернет.')) }}>
             ⬇ Скачать шаблон Excel

@@ -1,28 +1,35 @@
 // Путь: src/screens/TestScreen.tsx
 // Тест: брифинг с настройками → вопросы → разбор → итоги.
 
-import { useEffect, useState } from 'react'
-import type { CSSProperties } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
 import Briefing, { Segmented } from '../components/Briefing'
+import Icon from '../components/Icon'
 import { recordAnswer, useEmployees } from '../lib/employees'
 import { logAnswer } from '../lib/activity'
-import { buildQuiz, type Question, type QuizMode } from '../lib/quiz'
+import { buildQuiz, type Question, type QuizMode, type QuizTopic } from '../lib/quiz'
 import { checkAnswer, type CheckResult } from '../lib/answerCheck'
 import type { EmployeeWithProgress } from '../types'
 
 type Phase = 'brief' | 'answering' | 'feedback' | 'done'
 type Pool = 'all' | 'weak'
-type Settings = { size: number; mode: QuizMode; pool: Pool }
+type Settings = { size: number; mode: QuizMode; pool: Pool; topic: QuizTopic }
 
-const DEFAULTS: Settings = { size: 10, mode: 'mixed', pool: 'all' }
+const DEFAULTS: Settings = { size: 10, mode: 'mixed', pool: 'all', topic: 'roles' }
 
 function loadSettings(): Settings {
   try {
     const raw = localStorage.getItem('test-settings')
     if (!raw) return DEFAULTS
-    return { ...DEFAULTS, ...(JSON.parse(raw) as Partial<Settings>) }
+    const saved = JSON.parse(raw) as Partial<Settings> | null
+    if (!saved || typeof saved !== 'object') return DEFAULTS
+    return {
+      size: [0, 5, 10, 20].includes(saved.size ?? -1) ? saved.size! : DEFAULTS.size,
+      mode: saved.mode === 'choice' || saved.mode === 'input' ? saved.mode : DEFAULTS.mode,
+      pool: saved.pool === 'weak' ? saved.pool : DEFAULTS.pool,
+      topic: saved.topic === 'departments' || saved.topic === 'all' ? saved.topic : DEFAULTS.topic,
+    }
   } catch {
     return DEFAULTS
   }
@@ -45,9 +52,16 @@ export default function TestScreen() {
   const [result, setResult] = useState<CheckResult>({ verdict: 'wrong' })
   const [correctCount, setCorrectCount] = useState(0)
   const [wrongList, setWrongList] = useState<Question[]>([])
+  const submitted = useRef(false)
+  const almostResolved = useRef(false)
+  const page = useRef<HTMLDivElement>(null)
 
   const current = questions[index]
   const total = questions.length
+
+  useLayoutEffect(() => {
+    if (phase !== 'feedback') page.current?.closest('.app-content')?.scrollTo(0, 0)
+  }, [phase, index])
 
   useEffect(() => {
     localStorage.setItem('test-settings', JSON.stringify(settings))
@@ -63,7 +77,7 @@ export default function TestScreen() {
   function makeQuestions(st: Settings): Question[] {
     const pool = pickPool(st)
     const size = st.size === 0 ? pool.length : st.size
-    return buildQuiz(pool, st.mode, size)
+    return buildQuiz(pool, st.mode, size, st.topic)
   }
 
   function start() {
@@ -74,6 +88,8 @@ export default function TestScreen() {
     setChosen(null)
     setCorrectCount(0)
     setWrongList([])
+    submitted.current = false
+    almostResolved.current = false
     setPhase(q.length === 0 ? 'done' : 'answering')
   }
 
@@ -104,7 +120,8 @@ export default function TestScreen() {
   }
 
   function submit(rawAnswer: string) {
-    if (!current || phase !== 'answering') return
+    if (!current || phase !== 'answering' || submitted.current) return
+    submitted.current = true
 
     const checked = checkAnswer(rawAnswer, current.acceptable, current.field, otherValues(current))
     setResult(checked)
@@ -116,12 +133,16 @@ export default function TestScreen() {
 
   /** Решение пользователя по вердикту «почти правильно» */
   function resolveAlmost(asCorrect: boolean) {
-    if (!current) return
+    if (!current || phase !== 'feedback' || result.verdict !== 'almost' || almostResolved.current) return
+    almostResolved.current = true
     void commit(current, asCorrect)
     setResult({ verdict: asCorrect ? 'correct' : 'wrong', hint: result.hint })
   }
 
   function next() {
+    if (phase !== 'feedback' || result.verdict === 'almost' || !submitted.current) return
+    submitted.current = false
+    almostResolved.current = false
     setInput('')
     setChosen(null)
     if (index + 1 >= total) { setPhase('done'); reload() }
@@ -145,7 +166,7 @@ export default function TestScreen() {
     const weakCount = list.filter(isWeak).length
 
     return (
-      <div className="container">
+      <div className="container" ref={page}>
         <AppHeader title="Тест" back />
 
         {loading && <div className="card center muted">Загружаю…</div>}
@@ -153,21 +174,21 @@ export default function TestScreen() {
 
         {!loading && list.length === 0 && (
           <div className="card card--pad-lg center">
-            <p className="big-emoji">📭</p>
+            <p className="empty-state__icon"><Icon name="library" /></p>
             <p><strong>Сначала добавьте сотрудников</strong></p>
             <p className="muted small">Тест собирается из вашего списка, поэтому без него вопросов не будет.</p>
             <div className="stack">
-              <Link to="/import" className="btn btn--primary">📂 Загрузить из файла</Link>
-              <Link to="/employees" className="btn">👥 Добавить вручную</Link>
+              <Link to="/import" className="btn btn--primary"><Icon name="library" /> Загрузить из файла</Link>
+              <Link to="/employees" className="btn"><Icon name="plus" /> Добавить вручную</Link>
             </div>
           </div>
         )}
 
         {!loading && list.length > 0 && (
           <Briefing
-            emoji="✍️"
+            icon={<Icon name="check" />}
             title="Проверка знаний"
-            what="Здесь вы вспоминаете сами, без подсказок. Это в разы полезнее карточек: мозг достаёт ответ из памяти, а не просто соглашается с ним."
+            what="Проверьте, как хорошо вы запомнили имена и должности коллег. Выберите ответы из вариантов или вспоминайте их самостоятельно."
             steps={[
               'Вопросы бывают двух видов: вписать ответ своими словами или выбрать один из четырёх вариантов.',
               'Опечатки прощаются: «Федорова» вместо «Фёдорова» пройдёт. Спорные случаи я помечу как «почти правильно», и вы сами решите, зачесть ли.',
@@ -176,6 +197,22 @@ export default function TestScreen() {
             ]}
             settings={
               <>
+                <div className="setting">
+                  <div className="setting__title">Что проверять</div>
+                  <p className="setting__hint">
+                    Имена и должности — основной режим. Отделы и описания включаются отдельно.
+                  </p>
+                  <Segmented
+                    value={settings.topic}
+                    options={[
+                      { value: 'roles' as QuizTopic, label: 'Имена и должности' },
+                      { value: 'departments' as QuizTopic, label: 'Отделы' },
+                      { value: 'all' as QuizTopic, label: 'Всё' },
+                    ]}
+                    onChange={(topic) => setSettings({ ...settings, topic })}
+                  />
+                </div>
+
                 <div className="setting">
                   <div className="setting__title">Сколько вопросов</div>
                   <p className="setting__hint">10 вопросов — это примерно 3-4 минуты.</p>
@@ -227,10 +264,12 @@ export default function TestScreen() {
             }
             summary={
               preview.length === 0
-                ? 'По этим настройкам вопросы не собрались. Для режима «Выбор» нужно минимум 4 человека с разными должностями.'
+                ? settings.topic === 'departments'
+                  ? 'Добавьте отделы сотрудникам. Для режима «Выбор» нужно минимум 4 разных отдела; для ввода ответа достаточно одного.'
+                  : 'По этим настройкам вопросы не собрались. Для режима «Выбор» нужно минимум 4 человека с разными должностями.'
                 : `Готово ${preview.length} ${preview.length === 1 ? 'вопрос' : preview.length < 5 ? 'вопроса' : 'вопросов'}`
             }
-            startLabel={preview.length === 0 ? 'Вопросы не собрались' : '▶ Начать тест'}
+            startLabel={preview.length === 0 ? 'Вопросы не собрались' : 'Начать тест'}
             disabled={preview.length === 0}
             onStart={start}
           />
@@ -243,32 +282,21 @@ export default function TestScreen() {
   if (phase === 'done') {
     const percent = total === 0 ? 0 : Math.round((correctCount / total) * 100)
     return (
-      <div className="container fade-in">
+      <div className="container fade-in" ref={page}>
         <AppHeader title="Тест завершён" back />
 
         {total === 0 ? (
           <div className="card center">
             <p><strong>Не удалось собрать вопросы</strong></p>
             <p className="muted small">
-              Для выбора из четырёх вариантов нужно минимум 4 сотрудника с разными должностями.
-              Добавьте людей или выберите режим «только ввод текста».
+              Добавьте данные для выбранной темы или выберите режим «Ввод».
+              Для выбора из вариантов нужны четыре разных должности или отдела.
             </p>
             <button className="btn btn--primary" onClick={() => setPhase('brief')}>Назад к настройкам</button>
           </div>
         ) : (
-          <div className="card card--pad-lg center celebrate">
-            {percent >= 70 && Array.from({ length: 12 }).map((_, i) => (
-              <span
-                key={i}
-                className="confetti"
-                style={{ '--dx': `${(i - 6) * 26}px`, animationDelay: `${i * 0.05}s` } as CSSProperties}
-                aria-hidden="true"
-              >
-                {['🎉', '✨', '⭐', '🎊'][i % 4]}
-              </span>
-            ))}
-
-            <p className="big-emoji">{percent >= 80 ? '🏆' : percent >= 50 ? '👍' : '💪'}</p>
+          <div className="card card--pad-lg center">
+            <p className="result-icon"><Icon name={percent >= 80 ? 'check' : 'chart'} /></p>
             <h2 style={{ margin: '4px 0' }}>{correctCount} из {total}</h2>
             <p className="muted">Правильных ответов: {percent}%</p>
             <div className="progress" style={{ marginBottom: 16 }}>
@@ -287,10 +315,10 @@ export default function TestScreen() {
             )}
 
             <div className="stack">
-              <button className="btn btn--primary btn--lg" onClick={() => setPhase('brief')}>↻ Пройти ещё раз</button>
-              {wrongList.length > 0 && <Link to="/review" className="btn">🔁 Повторить ошибки карточками</Link>}
-              <Link to="/insight/weak" className="btn btn--ghost">⚠️ Мои слабые места</Link>
-              <Link to="/" className="btn btn--ghost">🏠 На главную</Link>
+              <button className="btn btn--primary btn--lg" onClick={() => setPhase('brief')}><Icon name="repeat" /> Пройти ещё раз</button>
+              {wrongList.length > 0 && <Link to="/review" className="btn"><Icon name="cards" /> Повторить ошибки карточками</Link>}
+              <Link to="/insight/weak" className="btn btn--ghost"><Icon name="chart" /> Мои слабые места</Link>
+              <Link to="/" className="btn btn--ghost"><Icon name="home" /> На главную</Link>
             </div>
           </div>
         )}
@@ -308,7 +336,7 @@ export default function TestScreen() {
     result.verdict === 'almost' ? ' answer-almost' : ' answer-wrong'
 
   return (
-    <div className="container fade-in">
+    <div className="container fade-in" ref={page}>
       <AppHeader title={`Вопрос ${index + 1} из ${total}`} back />
 
       <div className="progress" style={{ marginBottom: 16 }}>
@@ -354,7 +382,7 @@ export default function TestScreen() {
             {current.options?.map((option, i) => {
               let extra = ''
               if (phase === 'feedback') {
-                if (option === current.answer) extra = ' option--correct'
+                if (current.acceptable.includes(option)) extra = ' option--correct'
                 else if (option === chosen) extra = ' option--wrong'
                 else extra = ' option--muted'
               }
@@ -376,20 +404,21 @@ export default function TestScreen() {
         {/* ------------------------- РАЗБОР ОТВЕТА ------------------------ */}
         {phase === 'feedback' && (
           <div
-            className={`card ${
-              result.verdict === 'correct' ? 'answer-correct'
+            className={`card answer-feedback ${
+              result.verdict === 'correct' ? 'answer-correct is-correct'
               : result.verdict === 'almost' ? 'answer-almost'
-              : 'answer-wrong'
+              : 'answer-wrong is-wrong'
             }`}
+            role="status"
             style={{ marginTop: 16 }}
           >
             {result.verdict === 'correct' && (
-              <p style={{ margin: 0 }}><strong>✅ Правильно</strong></p>
+              <p className="answer-feedback__title" style={{ margin: 0 }}><Icon name="check" /><strong>Правильно</strong></p>
             )}
 
             {result.verdict === 'almost' && (
               <>
-                <p style={{ marginBottom: 6 }}><strong>🤏 Почти правильно</strong></p>
+                <p style={{ marginBottom: 6 }}><strong>Почти правильно</strong></p>
                 {result.hint && <p className="small" style={{ marginBottom: 6 }}>{result.hint}</p>}
                 <p className="small" style={{ marginBottom: 4 }}>
                   Вы написали: <strong>{input || chosen}</strong>
@@ -410,7 +439,7 @@ export default function TestScreen() {
 
             {result.verdict === 'wrong' && (
               <>
-                <p style={{ marginBottom: 6 }}><strong>❌ Неправильно</strong></p>
+                <p className="answer-feedback__title" style={{ marginBottom: 6 }}><Icon name="close" /><strong>Неправильно</strong></p>
                 {result.hint && <p className="small" style={{ marginBottom: 6 }}>{result.hint}</p>}
                 <p className="small" style={{ marginBottom: 6 }}>
                   Правильный ответ: <strong>{current.answer}</strong>

@@ -23,7 +23,7 @@ import GameScreen from './screens/GameScreen'
 import PrivacyScreen from './screens/PrivacyScreen'
 import DailyScreen from './screens/DailyScreen'
 import ListDetailScreen from './screens/ListDetailScreen'
-import BottomNav from './components/BottomNav'
+import AppLayout from './components/AppLayout'
 
 /** После входа открываем главную. Ссылки уведомлений и запуск PWA сохраняют свой маршрут. */
 function StartAtHome({ afterLogin }: { afterLogin: RefObject<boolean> }) {
@@ -100,6 +100,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <StartAtHome afterLogin={sawAuthScreen} />
+      <AppLayout>
       <Routes>
         <Route path="/" element={<HomeScreen />} />
         <Route path="/today" element={<DailyScreen />} />
@@ -125,7 +126,7 @@ export default function App() {
         <Route path="/insight/:group" element={<InsightScreen />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      <BottomNav />
+      </AppLayout>
     </BrowserRouter>
   )
 }

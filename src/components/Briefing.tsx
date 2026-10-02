@@ -62,7 +62,8 @@ export function SwitchRow({ on, title, hint, onToggle }: SwitchProps) {
 /* ------------------------------------------------------------------ */
 
 type Props = {
-  emoji: string
+  emoji?: string
+  icon?: ReactNode
   title: string
   what: string
   steps: string[]
@@ -77,12 +78,13 @@ type Props = {
 }
 
 export default function Briefing({
-  emoji, title, what, steps, settings, startLabel, onStart, disabled = false, summary, children,
+  emoji, icon, title, what, steps, settings, startLabel, onStart, disabled = false, summary, children,
 }: Props) {
   return (
     <div className="stagger">
       <div className="card card--pad-lg brief__head">
-        <span className="brief__emoji" aria-hidden="true">{emoji}</span>
+        {icon ? <span className="brief__icon" aria-hidden="true">{icon}</span>
+          : emoji && <span className="brief__emoji" aria-hidden="true">{emoji}</span>}
         <h2 className="brief__title">{title}</h2>
         <p className="brief__what">{what}</p>
       </div>

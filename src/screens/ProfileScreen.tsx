@@ -130,7 +130,7 @@ export default function ProfileScreen() {
       </div>
 
       <div style={{ marginBottom: 16 }}>
-        <Link to="/stats" className="btn btn--block">📊 Подробная статистика</Link>
+        <Link to="/stats" className="btn btn--block">Подробная статистика</Link>
       </div>
 
       {info && <div className="card answer-correct small" style={{ marginBottom: 16 }}>{info}</div>}
@@ -148,7 +148,7 @@ export default function ProfileScreen() {
             {busy ? 'Сбрасываю...' : '↺ Обнулить весь прогресс'}
           </button>
           <button className="btn btn--ghost btn--block" onClick={() => void signOut().catch(() => setInfo('Не удалось завершить выход. Проверьте соединение и попробуйте снова.'))}>
-            🚪 Выйти из аккаунта
+            Выйти из аккаунта
           </button>
         </div>
       </div>

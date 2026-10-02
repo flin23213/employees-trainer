@@ -1,4 +1,5 @@
 // Путь: src/screens/StatsScreen.tsx
+import Icon from '../components/Icon'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
@@ -48,7 +49,7 @@ export default function StatsScreen() {
 
       {!loading && list.length === 0 && (
         <div className="card center">
-          <p style={{ fontSize: 40, margin: 0 }}>📭</p>
+          <p className="brief__icon" aria-hidden="true"><Icon name="library" /></p>
           <p><strong>Пока нет данных</strong></p>
           <Link to="/employees" className="btn btn--primary">Добавить сотрудников</Link>
         </div>
@@ -115,7 +116,7 @@ export default function StatsScreen() {
                 ))}
               </div>
               <div className="row" style={{ marginTop: 14 }}>
-                <Link to="/review" className="btn btn--primary btn--sm">🔁 Повторить ошибки</Link>
+                <Link to="/review" className="btn btn--primary btn--sm">Повторить ошибки</Link>
               </div>
             </div>
           )}

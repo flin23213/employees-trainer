@@ -23,7 +23,7 @@ export default function ActivityChart({ days }: { days: number }) {
         <div className="spacer" />
         {streak > 0 && (
           <span className="flame">
-            🔥 {streak} {streak === 1 ? 'день' : streak < 5 ? 'дня' : 'дней'} подряд
+            {streak} {streak === 1 ? 'день' : streak < 5 ? 'дня' : 'дней'} подряд
           </span>
         )}
       </div>

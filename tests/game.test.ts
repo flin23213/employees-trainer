@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { makeRound, shuffle, rolesMatch, quizOptions, scoreTime, normalizeRole } from '../src/lib/gameEngine.ts'
+import { makeRound, makeMatchTiles, shuffle, rolesMatch, quizOptions, scoreTime, normalizeRole } from '../src/lib/gameEngine.ts'
 import { swipeDecision } from '../src/lib/cardGesture.ts'
 
 const people = [
@@ -20,6 +20,15 @@ test('rounds preserve the source list and exclude incomplete employees', () => {
 test('identical job titles allow either matching card', () => {
   assert.equal(rolesMatch(people[0], people[1]), true)
   assert.equal(rolesMatch(people[0], people[2]), false)
+})
+
+test('mixed board keeps every name and role independently selectable', () => {
+  const tiles = makeMatchTiles(people, () => 0.5)
+  assert.equal(new Set(tiles.map(tile => tile.key)).size, people.length * 2)
+  for (const person of people) {
+    assert.deepEqual(tiles.filter(tile => tile.employee.id === person.id).map(tile => tile.kind).sort(), ['name', 'role'])
+  }
+  assert.ok(tiles.some((tile, index) => index > 0 && tile.kind !== tiles[index - 1].kind))
 })
 test('quiz options contain the right job exactly once, without duplicate choices', () => {
   const options = quizOptions(people[0], people, () => 0.5)

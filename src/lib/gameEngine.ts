@@ -1,5 +1,6 @@
 export type GameMode = 'match' | 'quiz'
 export type GameEmployee = { id: string; full_name: string; job_title: string }
+export type MatchTile = { key: string; kind: 'name' | 'role'; employee: GameEmployee }
 export const PENALTY_MS = 3000
 export const normalizeRole = (value: string) => value.trim().replace(/\s+/g, ' ').toLocaleLowerCase('ru')
 export function shuffle<T>(items: readonly T[], random = Math.random): T[] {
@@ -12,6 +13,12 @@ export function shuffle<T>(items: readonly T[], random = Math.random): T[] {
 }
 export function makeRound(employees: readonly GameEmployee[], count: number): GameEmployee[] {
   return shuffle(employees.filter(employee => employee.full_name.trim() && employee.job_title.trim())).slice(0, count)
+}
+export function makeMatchTiles(people: readonly GameEmployee[], random = Math.random): MatchTile[] {
+  return shuffle(people.flatMap(employee => [
+    { key: `name-${employee.id}`, kind: 'name' as const, employee },
+    { key: `role-${employee.id}`, kind: 'role' as const, employee },
+  ]), random)
 }
 export function rolesMatch(person: GameEmployee, role: GameEmployee) {
   // Identical job titles are interchangeable: never penalize an ambiguous valid pair.

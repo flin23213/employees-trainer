@@ -8,6 +8,7 @@
 //  * получатель может «заглянуть» в код до применения и видит, в какой
 //    свой список попадут люди.
 
+import Icon from '../components/Icon'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
@@ -176,7 +177,7 @@ export default function ShareScreen() {
       {tab === 'give' && (
         <div className="stagger">
           <div className="card card--pad-lg brief__head">
-            <span className="brief__emoji" aria-hidden="true">🤝</span>
+            <span className="brief__icon" aria-hidden="true"><Icon name="share" /></span>
             <h2 className="brief__title">Отдать свой список коллеге</h2>
             <p className="brief__what">
               Выбираете список, получаете короткий код, коллега вводит его у себя — и ваши
@@ -262,7 +263,7 @@ export default function ShareScreen() {
 
             <button className="btn btn--primary btn--block btn--lg" onClick={() => void handleCreate()}
                     disabled={busy || !chosen || chosen.employee_count === 0}>
-              {busy ? 'Создаю…' : chosen ? `🎟 Создать код на «${chosen.name}»` : '🎟 Создать код'}
+              {busy ? 'Создаю…' : chosen ? `Создать код на «${chosen.name}»` : 'Создать код'}
             </button>
 
             {chosen && chosen.employee_count === 0 && (
@@ -281,15 +282,15 @@ export default function ShareScreen() {
               <div className="code-box__value">{formatCode(fresh.code)}</div>
               <div className="grid grid-2" style={{ marginTop: 16 }}>
                 <button className="btn btn--block" onClick={() => void copy(fresh.code)}>
-                  {copied ? '✅ Скопировано' : '📋 Скопировать'}
+                  {copied ? 'Скопировано' : 'Скопировать'}
                 </button>
                 <button className="btn btn--primary btn--block"
                         onClick={() => void share(fresh.code, fresh.listName)}>
-                  📨 Отправить
+                  Отправить
                 </button>
               </div>
               <p className="muted small" style={{ marginTop: 12, marginBottom: 0 }}>
-                Коллеге нужно открыть тренажёр → меню ☰ → «Обмен списками» → «Ввести код».
+                Коллеге нужно открыть тренажёр → меню → «Библиотека» → «Обмен списками» → «Ввести код».
               </p>
             </div>
           )}
@@ -319,16 +320,16 @@ export default function ShareScreen() {
                         {c.max_uses === null ? ' раз' : ` из ${c.max_uses}`}
                       </p>
                       <div className="row" style={{ gap: 8 }}>
-                        <button className="btn btn--sm" onClick={() => void copy(c.code)}>📋 Копировать</button>
+                        <button className="btn btn--sm" onClick={() => void copy(c.code)}>Копировать</button>
                         {st.alive && (
                           <button className="btn btn--sm" onClick={() => void revokeShareCode(c.code).then(loadCodes)}>
-                            ⛔ Отключить
+                            Отключить
                           </button>
                         )}
                         <div className="spacer" />
                         <button className="btn btn--sm btn--ghost"
                                 onClick={() => void deleteShareCode(c.code).then(loadCodes)}>
-                          🗑
+                          Удалить
                         </button>
                       </div>
                     </div>
@@ -344,7 +345,7 @@ export default function ShareScreen() {
       {tab === 'take' && (
         <div className="stagger">
           <div className="card card--pad-lg brief__head">
-            <span className="brief__emoji" aria-hidden="true">🎟</span>
+            <span className="brief__icon" aria-hidden="true"><Icon name="share" /></span>
             <h2 className="brief__title">Получить готовый список</h2>
             <p className="brief__what">
               Введите код, который дал коллега. Сотрудники добавятся в ваш активный список;
@@ -394,19 +395,19 @@ export default function ShareScreen() {
               <button className="btn btn--block"
                       onClick={() => void handleCheck()}
                       disabled={checking || input.trim().length < 4}>
-                {checking ? 'Смотрю…' : '🔍 Проверить'}
+                {checking ? 'Смотрю…' : 'Проверить'}
               </button>
               <button className="btn btn--primary btn--block"
                       onClick={() => void handleRedeem()}
                       disabled={taking || input.trim().length < 4}>
-                {taking ? 'Добавляю…' : '✅ Применить'}
+                {taking ? 'Добавляю…' : 'Применить'}
               </button>
             </div>
           </div>
 
           {result && (
             <div className="card card--pad-lg center celebrate" style={{ marginTop: 14 }}>
-              <p className="big-emoji">{result.added > 0 ? '🎉' : '🤔'}</p>
+              <p className="brief__icon" aria-hidden="true"><Icon name="check" /></p>
               <h3 style={{ margin: '4px 0' }}>
                 {result.added > 0 ? `Добавлено ${result.added} чел.` : 'Новых сотрудников нет'}
               </h3>
@@ -416,8 +417,8 @@ export default function ShareScreen() {
                 {result.skipped > 0 && ` Пропущено ${result.skipped}: они у вас уже есть.`}
               </p>
               <div className="stack">
-                <Link to="/learn" className="btn btn--primary">🚀 Начать обучение</Link>
-                <Link to="/employees" className="btn">👥 Посмотреть список</Link>
+                <Link to="/learn" className="btn btn--primary">Начать обучение</Link>
+                <Link to="/employees" className="btn">Посмотреть список</Link>
               </div>
             </div>
           )}

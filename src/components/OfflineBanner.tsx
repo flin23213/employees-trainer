@@ -20,7 +20,7 @@ export default function OfflineBanner() {
 
   return (
     <div className="offline-banner">
-      📡 Нет интернета. Данные не сохраняются, ответы могут потеряться.
+      Нет интернета. Данные не сохраняются, ответы могут потеряться.
     </div>
   )
 }

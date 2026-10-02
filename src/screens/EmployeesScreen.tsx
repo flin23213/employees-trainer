@@ -137,9 +137,9 @@ export default function EmployeesScreen() {
                       <span className={meta.className}>{meta.label}</span>
                     </div>
 
-                    {e.department && <div className="small muted" style={{ marginTop: 6 }}>🏢 {e.department}</div>}
+                    {e.department && <div className="small muted" style={{ marginTop: 6 }}>{e.department}</div>}
                     {e.description && <div className="small" style={{ marginTop: 8 }}>{e.description}</div>}
-                    {e.notes && <div className="small muted" style={{ marginTop: 6 }}>📝 {e.notes}</div>}
+                    {e.notes && <div className="small muted" style={{ marginTop: 6 }}>{e.notes}</div>}
 
                     {e.attempts > 0 && (
                       <div className="small muted" style={{ marginTop: 10 }}>
@@ -155,14 +155,13 @@ export default function EmployeesScreen() {
         </>
       )}
 
-      {/* Плавающая круглая кнопка «добавить» — удобно, когда список и вы внизу */}
-      <button
-        className="btn btn--primary fab"
+      {!loading && visible.length > 0 && <button
+        className="btn btn--block"
+        style={{ marginTop: 16 }}
         onClick={() => setEditing({ mode: 'new' })}
-        aria-label="Добавить сотрудника"
       >
-        <span className="fab__icon" aria-hidden="true">+</span>
-      </button>
+        Добавить сотрудника
+      </button>}
 
       {/* Форма показывается только когда что-то редактируем */}
       {editing.mode !== 'closed' && (

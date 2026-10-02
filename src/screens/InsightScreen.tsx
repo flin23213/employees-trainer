@@ -2,6 +2,7 @@
 // «Разбор показателя»: сюда ведут плитки с главного экрана.
 // Один экран обслуживает несколько групп: /insight/weak, /insight/known и т.д.
 
+import Icon from '../components/Icon'
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
@@ -10,13 +11,13 @@ import type { EmployeeWithProgress } from '../types'
 
 type Group = 'known' | 'weak' | 'learning' | 'new' | 'accuracy' | 'progress'
 
-const GROUPS: Record<Group, { title: string; emoji: string; note: string }> = {
-  known:    { title: 'Изучено',            emoji: '✅', note: 'Этих людей вы отвечаете уверенно: точность высокая, серия верных ответов набрана.' },
-  weak:     { title: 'Слабые места',       emoji: '⚠️', note: 'Здесь вы чаще ошибаетесь. Худшие — сверху. Именно с них быстрее всего растёт общий процент.' },
-  learning: { title: 'В процессе',         emoji: '📖', note: 'Уже знакомы, но результат ещё не стабильный. Нужно ещё несколько повторов.' },
-  new:      { title: 'Ещё не изучено',     emoji: '🆕', note: 'Этих людей вы ни разу не отвечали. С них удобно начинать новое занятие.' },
-  accuracy: { title: 'Точность ответов',   emoji: '🎯', note: 'Доля верных ответов по каждому сотруднику. Слабые — в начале списка.' },
-  progress: { title: 'Общий прогресс',     emoji: '📈', note: 'Из чего складывается ваш процент и где вы теряете больше всего.' },
+const GROUPS: Record<Group, { title: string; icon: string; note: string }> = {
+  known:    { title: 'Изучено',            icon: 'check', note: 'Этих людей вы отвечаете уверенно: точность высокая, серия верных ответов набрана.' },
+  weak:     { title: 'Слабые места',       icon: 'warning', note: 'Здесь вы чаще ошибаетесь. Худшие — сверху. Именно с них быстрее всего растёт общий процент.' },
+  learning: { title: 'В процессе',         icon: 'cards', note: 'Уже знакомы, но результат ещё не стабильный. Нужно ещё несколько повторов.' },
+  new:      { title: 'Ещё не изучено',     icon: 'plus', note: 'Этих людей вы ни разу не отвечали. С них удобно начинать новое занятие.' },
+  accuracy: { title: 'Точность ответов',   icon: 'chart', note: 'Доля верных ответов по каждому сотруднику. Слабые — в начале списка.' },
+  progress: { title: 'Общий прогресс',     icon: 'chart', note: 'Из чего складывается ваш процент и где вы теряете больше всего.' },
 }
 
 function formatDate(iso: string | null): string {
@@ -152,7 +153,7 @@ export default function InsightScreen() {
         <div className="stagger">
           {/* ---------- Шапка ---------- */}
           <div className="card card--pad-lg brief__head">
-            <span className="brief__emoji" aria-hidden="true">{info.emoji}</span>
+            <span className="brief__icon" aria-hidden="true"><Icon name={info.icon} /></span>
             <h2 className="brief__title">
               {group === 'progress' ? `${s.progressPercent}%`
                 : group === 'accuracy' ? `${s.avgAccuracy}%`
@@ -184,7 +185,7 @@ export default function InsightScreen() {
               <div className="section"><h3 className="section__title">Состав списка</h3></div>
               <div className="stack">
                 <Link to="/insight/known" className="action">
-                  <span className="action__icon">✅</span>
+                  <span className="action__icon" aria-hidden="true"><Icon name="check" /></span>
                   <span className="action__body">
                     <span className="action__title">Выучено <span className="pill pill--soft">{s.known}</span></span>
                     <span className="action__desc">Отвечаете уверенно</span>
@@ -192,7 +193,7 @@ export default function InsightScreen() {
                   <span className="action__chev">→</span>
                 </Link>
                 <Link to="/insight/learning" className="action">
-                  <span className="action__icon">📖</span>
+                  <span className="action__icon" aria-hidden="true"><Icon name="cards" /></span>
                   <span className="action__body">
                     <span className="action__title">В процессе <span className="pill pill--soft">{s.learning}</span></span>
                     <span className="action__desc">Результат ещё не стабильный</span>
@@ -200,7 +201,7 @@ export default function InsightScreen() {
                   <span className="action__chev">→</span>
                 </Link>
                 <Link to="/insight/weak" className="action">
-                  <span className="action__icon">⚠️</span>
+                  <span className="action__icon" aria-hidden="true"><Icon name="warning" /></span>
                   <span className="action__body">
                     <span className="action__title">Слабые места <span className="pill">{s.weak}</span></span>
                     <span className="action__desc">Чаще ошибаетесь</span>
@@ -208,7 +209,7 @@ export default function InsightScreen() {
                   <span className="action__chev">→</span>
                 </Link>
                 <Link to="/insight/new" className="action">
-                  <span className="action__icon">🆕</span>
+                  <span className="action__icon" aria-hidden="true"><Icon name="plus" /></span>
                   <span className="action__body">
                     <span className="action__title">Не изучено <span className="pill pill--soft">{s.fresh}</span></span>
                     <span className="action__desc">Ни одного ответа</span>
@@ -267,8 +268,8 @@ export default function InsightScreen() {
               )}
 
               <div className="stack" style={{ marginTop: 18 }}>
-                <Link to="/learn" className="btn btn--primary btn--lg btn--block">🎯 Продолжить обучение</Link>
-                <Link to="/stats" className="btn btn--block">📊 Полная статистика</Link>
+                <Link to="/learn" className="btn btn--primary btn--lg btn--block">Продолжить обучение</Link>
+                <Link to="/stats" className="btn btn--block">Полная статистика</Link>
               </div>
             </>
           )}
@@ -297,7 +298,7 @@ export default function InsightScreen() {
 
               {rows.length === 0 ? (
                 <div className="card card--pad-lg center" style={{ marginTop: 14 }}>
-                  <p className="big-emoji">{group === 'weak' ? '🎉' : '🙂'}</p>
+                  <p className="brief__icon" aria-hidden="true"><Icon name="check" /></p>
                   <p><strong>
                     {group === 'weak' ? 'Слабых мест нет' :
                      group === 'known' ? 'Пока никто не выучен' :
@@ -311,8 +312,8 @@ export default function InsightScreen() {
                       : 'Пройдите карточки или тест, и здесь появятся цифры.'}
                   </p>
                   <div className="stack">
-                    <Link to="/learn" className="btn btn--primary">🎯 Начать обучение</Link>
-                    <Link to="/" className="btn btn--ghost">🏠 На главную</Link>
+                    <Link to="/learn" className="btn btn--primary">Начать обучение</Link>
+                    <Link to="/" className="btn btn--ghost">На главную</Link>
                   </div>
                 </div>
               ) : (
@@ -328,20 +329,20 @@ export default function InsightScreen() {
                   <div className="stack" style={{ marginTop: 18 }}>
                     {(group === 'weak' || group === 'accuracy') && (
                       <Link to="/review" className="btn btn--primary btn--lg btn--block">
-                        🔁 Повторить эти карточками
+                        Повторить эти карточками
                       </Link>
                     )}
                     {group === 'new' && (
                       <Link to="/learn" className="btn btn--primary btn--lg btn--block">
-                        🎯 Начать с них обучение
+                        Начать с них обучение
                       </Link>
                     )}
                     {group === 'known' && (
                       <Link to="/test" className="btn btn--primary btn--lg btn--block">
-                        ✍️ Проверить тестом, держится ли результат
+                        Проверить тестом, держится ли результат
                       </Link>
                     )}
-                    <Link to="/employees" className="btn btn--block">👥 Открыть полный список</Link>
+                    <Link to="/employees" className="btn btn--block">Открыть полный список</Link>
                   </div>
                 </>
               )}

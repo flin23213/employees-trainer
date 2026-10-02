@@ -5,6 +5,7 @@
 // Сверху — крупная плашка активного профиля, ниже — все профили с кружком
 // выбора (как в настройках телефона) и полоской прогресса у каждого.
 
+import Icon from '../components/Icon'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
@@ -51,7 +52,7 @@ function AboutProfiles() {
   return (
     <div className="card fold">
       <button className="fold__head" onClick={() => setOpen(!open)} aria-expanded={open}>
-        <span className="fold__icon" aria-hidden="true">📚</span>
+        <span className="fold__icon" aria-hidden="true"><Icon name="library" /></span>
         <span style={{ flex: 1, minWidth: 0 }}>
           <span className="fold__title">Что такое профиль списка</span>
           <span className="fold__sub">Зачем их несколько и что происходит при переключении</span>
@@ -166,9 +167,9 @@ export default function ListsScreen() {
               </p>
 
               <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
-                <Link to="/learn" className="btn btn--primary btn--sm">🚀 Заниматься</Link>
-                <Link to="/employees" className="btn btn--sm">👥 Сотрудники</Link>
-                <Link to={`/share?list=${active.id}`} className="btn btn--sm">🤝 Поделиться</Link>
+                <Link to="/learn" className="btn btn--primary btn--sm">Заниматься</Link>
+                <Link to="/employees" className="btn btn--sm">Сотрудники</Link>
+                <Link to={`/share?list=${active.id}`} className="btn btn--sm">Поделиться</Link>
               </div>
             </div>
           )}
@@ -241,9 +242,9 @@ export default function ListsScreen() {
 
                         <span className="lcard__meta">
                           <span>{l.employee_count} чел.</span>
-                          {l.employee_count > 0 && <span>✅ выучено {l.known}</span>}
-                          {l.weak > 0 && <span>⚠️ слабых {l.weak}</span>}
-                          {l.answers > 0 && <span>🎯 {l.avg_accuracy}%</span>}
+                          {l.employee_count > 0 && <span>выучено {l.known}</span>}
+                          {l.weak > 0 && <span>слабых {l.weak}</span>}
+                          {l.answers > 0 && <span>{l.avg_accuracy}%</span>}
                         </span>
 
                         {l.employee_count > 0 && (
@@ -270,17 +271,17 @@ export default function ListsScreen() {
                       onClick={() => setOpenActs(openActs === l.id ? null : l.id)}
                       aria-expanded={openActs === l.id}
                     >
-                      {openActs === l.id ? 'Скрыть управление ⌃' : '⚙️ Управление профилем ⌄'}
+                      {openActs === l.id ? 'Скрыть управление ⌃' : 'Управление профилем ⌄'}
                     </button>
 
                     {openActs === l.id && (
                       <div className="lcard__acts">
                         <button className="btn btn--sm" disabled={busy} onClick={() => startEdit(l)}>
-                          ✏️ Переименовать
+                          Переименовать
                         </button>
 
                         <Link to={`/share?list=${l.id}`} className="btn btn--sm">
-                          🤝 Поделиться
+                          Поделиться
                         </Link>
 
                         <button
@@ -299,7 +300,7 @@ export default function ListsScreen() {
                             })
                           }}
                         >
-                          🔄 Сбросить прогресс
+                          Сбросить прогресс
                         </button>
 
                         <button
@@ -316,7 +317,7 @@ export default function ListsScreen() {
                             })
                           }}
                         >
-                          🧹 Очистить
+                          Очистить
                         </button>
 
                         <div className="spacer" />
@@ -334,7 +335,7 @@ export default function ListsScreen() {
                             void run(() => deleteList(l.id), `Профиль «${l.name}» удалён.`)
                           }}
                         >
-                          🗑 Удалить
+                          Удалить
                         </button>
                       </div>
                     )}
@@ -393,7 +394,7 @@ export default function ListsScreen() {
               </>
             ) : (
               <button className="btn btn--primary btn--block btn--lg" onClick={() => setCreating(true)}>
-                ➕ Добавить профиль
+                Добавить профиль
               </button>
             )}
           </div>

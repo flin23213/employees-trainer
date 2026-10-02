@@ -1,8 +1,9 @@
 // Путь: src/screens/CardsScreen.tsx
 // Карточки: брифинг с настройками → колода со свайпами → итоги.
 
-import { useEffect, useRef, useState } from 'react'
-import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react'
+import Icon from '../components/Icon'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import type { PointerEvent as ReactPointerEvent } from 'react'
 import { Link } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
 import Briefing, { Segmented, SwitchRow } from '../components/Briefing'
@@ -82,6 +83,10 @@ export default function CardsScreen({ mode }: { mode: SessionMode }) {
 
   const [settings, setSettings] = useState<Settings>(() => loadSettings(mode))
   const [phase, setPhase] = useState<Phase>('brief')
+  const page = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
+    page.current?.closest('.app-content')?.scrollTo(0, 0)
+  }, [phase])
   const [deck, setDeck] = useState<EmployeeWithProgress[]>([])
   const [index, setIndex] = useState(0)
   const [revealed, setRevealed] = useState(false)
@@ -245,7 +250,7 @@ export default function CardsScreen({ mode }: { mode: SessionMode }) {
           ]
 
     return (
-      <div className="container">
+      <div className="container" ref={page}>
         <AppHeader title={TITLES[mode]} back />
 
         {loading && <div className="card center muted">Загружаю…</div>}
@@ -253,19 +258,19 @@ export default function CardsScreen({ mode }: { mode: SessionMode }) {
 
         {!loading && list.length === 0 && (
           <div className="card card--pad-lg center">
-            <p className="big-emoji">📭</p>
+            <p className="brief__icon" aria-hidden="true"><Icon name="library" /></p>
             <p><strong>Пока некого учить</strong></p>
             <p className="muted small">Сначала добавьте сотрудников или загрузите список из файла.</p>
             <div className="stack">
-              <Link to="/import" className="btn btn--primary">📂 Загрузить из файла</Link>
-              <Link to="/employees" className="btn">👥 Добавить вручную</Link>
+              <Link to="/import" className="btn btn--primary">Загрузить из файла</Link>
+              <Link to="/employees" className="btn">Добавить вручную</Link>
             </div>
           </div>
         )}
 
         {!loading && list.length > 0 && (
           <Briefing
-            emoji={mode === 'review' ? '🔁' : mode === 'all' ? '🃏' : '🎯'}
+            icon={<Icon name={mode === 'review' ? 'repeat' : 'cards'} />}
             title={
               mode === 'review' ? 'Повторение ошибок'
               : mode === 'all' ? 'Все карточки'
@@ -364,14 +369,14 @@ export default function CardsScreen({ mode }: { mode: SessionMode }) {
 
     if (total === 0) {
       return (
-        <div className="container fade-in">
+        <div className="container fade-in" ref={page}>
           <AppHeader title={TITLES[mode]} back />
           <div className="card card--pad-lg center">
-            <p className="big-emoji">🎉</p>
+            <p className="brief__icon" aria-hidden="true"><Icon name="check" /></p>
             <p><strong>Повторять нечего</strong></p>
             <p className="muted small">Слабых мест нет. Загляните позже или пройдите тест.</p>
             <div className="stack">
-              <Link to="/test" className="btn btn--primary">✍️ Пройти тест</Link>
+              <Link to="/test" className="btn btn--primary">Пройти тест</Link>
               <Link to="/" className="btn btn--ghost">На главную</Link>
             </div>
           </div>
@@ -380,26 +385,11 @@ export default function CardsScreen({ mode }: { mode: SessionMode }) {
     }
 
     return (
-      <div className="container fade-in">
+      <div className="container fade-in" ref={page}>
         <AppHeader title="Занятие завершено" back />
 
         <div className="card card--pad-lg center celebrate">
-          {/* Салют из эмодзи: 12 штук с разным разлётом */}
-          {percent >= 70 && Array.from({ length: 12 }).map((_, i) => (
-            <span
-              key={i}
-              className="confetti"
-              style={{
-                '--dx': `${(i - 6) * 26}px`,
-                animationDelay: `${i * 0.05}s`,
-              } as CSSProperties}
-              aria-hidden="true"
-            >
-              {['🎉', '✨', '⭐', '🎊'][i % 4]}
-            </span>
-          ))}
-
-          <p className="big-emoji">{percent >= 90 ? '🏆' : percent >= 60 ? '👍' : '💪'}</p>
+          <p className="brief__icon" aria-hidden="true"><Icon name="check" /></p>
           <h2 style={{ margin: '4px 0' }}>{known} из {total}</h2>
           <p className="muted">Узнали {percent}% колоды</p>
 
@@ -426,10 +416,10 @@ export default function CardsScreen({ mode }: { mode: SessionMode }) {
           <div className="stack">
             <button className="btn btn--primary btn--lg" onClick={backToBrief}>↻ Ещё заход</button>
             {unknown > 0 && mode !== 'review' && (
-              <Link to="/review" className="btn">🔁 Повторить только ошибки</Link>
+              <Link to="/review" className="btn">Повторить только ошибки</Link>
             )}
-            <Link to="/test" className="btn btn--ghost">✍️ Проверить себя тестом</Link>
-            <Link to="/" className="btn btn--ghost">🏠 На главную</Link>
+            <Link to="/test" className="btn btn--ghost">Проверить себя тестом</Link>
+            <Link to="/" className="btn btn--ghost">На главную</Link>
           </div>
         </div>
       </div>
@@ -450,12 +440,12 @@ export default function CardsScreen({ mode }: { mode: SessionMode }) {
     settings.face === 'name' ? 'Кто это и чем занимается?' : 'Кто занимает эту должность?'
 
   return (
-    <div className="container fade-in">
+    <div className="container fade-in" ref={page}>
       <AppHeader title={TITLES[mode]} back />
 
       <div className="row small muted" style={{ justifyContent: 'space-between', marginBottom: 8 }}>
         <span>Карточка {index + 1} из {total}</span>
-        <span>✅ {known} · ❌ {unknown}</span>
+        <span>Знаю: {known} · Не знаю: {unknown}</span>
       </div>
       <div className="progress" style={{ marginBottom: 20 }}>
         <div className="progress__bar" style={{ width: `${percentDone}%` }} />
@@ -543,10 +533,10 @@ export default function CardsScreen({ mode }: { mode: SessionMode }) {
         ) : (
           <div className="grid grid-2">
             <button className="btn btn--danger btn--block btn--lg" disabled={flying} onClick={() => fly('left')}>
-              ❌ Не знаю
+              Не знаю
             </button>
             <button className="btn btn--success btn--block btn--lg" disabled={flying} onClick={() => fly('right')}>
-              ✅ Знаю
+              Знаю
             </button>
           </div>
         )}

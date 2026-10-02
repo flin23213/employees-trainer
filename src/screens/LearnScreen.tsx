@@ -1,6 +1,7 @@
 // Путь: src/screens/LearnScreen.tsx
 // Развилка «Начать обучение»: сначала выбираете ВИД занятия, потом настройки.
 
+import Icon from '../components/Icon'
 import { Link } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
 import { computeStats, useEmployees } from '../lib/employees'
@@ -16,12 +17,12 @@ export default function LearnScreen() {
       <div className="container">
         <AppHeader title="Начать обучение" back />
         <div className="card card--pad-lg center">
-          <p className="big-emoji">📭</p>
+          <p className="brief__icon" aria-hidden="true"><Icon name="library" /></p>
           <p><strong>Пока некого учить</strong></p>
           <p className="muted small">Добавьте сотрудников — и здесь появятся занятия.</p>
           <div className="stack">
-            <Link to="/import" className="btn btn--primary">📂 Загрузить из файла</Link>
-            <Link to="/employees" className="btn">👥 Добавить вручную</Link>
+            <Link to="/import" className="btn btn--primary">Загрузить из файла</Link>
+            <Link to="/employees" className="btn">Добавить вручную</Link>
           </div>
         </div>
       </div>
@@ -34,7 +35,7 @@ export default function LearnScreen() {
 
       <div className="stagger">
         <div className="card card--pad-lg brief__head">
-          <span className="brief__emoji" aria-hidden="true">🚀</span>
+          <span className="brief__icon" aria-hidden="true"><Icon name="cards" /></span>
           <h2 className="brief__title">Чем займёмся?</h2>
           <p className="brief__what">
             Начните с карточек, чтобы запомнить сотрудников. Затем проверьте себя тестом или игрой на время.
@@ -45,7 +46,7 @@ export default function LearnScreen() {
         <div className="pick" style={{ marginTop: 16 }}>
           <Link to="/cards" className="pick__card pick__card--cards">
             <span className="pick__shine" aria-hidden="true" />
-            <span className="pick__icon" aria-hidden="true">🃏</span>
+            <span className="pick__icon" aria-hidden="true"><Icon name="cards" /></span>
             <span className="pick__title">Карточки</span>
             <span className="pick__tag">узнавание · быстро</span>
             <ul className="pick__list">
@@ -59,7 +60,7 @@ export default function LearnScreen() {
 
           <Link to="/test" className="pick__card pick__card--test">
             <span className="pick__shine" aria-hidden="true" />
-            <span className="pick__icon" aria-hidden="true">✍️</span>
+            <span className="pick__icon" aria-hidden="true"><Icon name="check" /></span>
             <span className="pick__title">Тест</span>
             <span className="pick__tag">припоминание · надёжно</span>
             <ul className="pick__list">
@@ -78,9 +79,9 @@ export default function LearnScreen() {
         </div>
 
         <div className="stack">
-          <Link to="/games" className="action"><span className="action__icon">🎮</span><span className="action__body"><span className="action__title">Игры и личные рекорды</span><span className="action__desc">Сопоставляйте пары и отвечайте на время</span></span><span className="action__chev">→</span></Link>
+          <Link to="/games" className="action"><span className="action__icon" aria-hidden="true"><Icon name="games" /></span><span className="action__body"><span className="action__title">Игры и личные рекорды</span><span className="action__desc">Сопоставляйте пары и отвечайте на время</span></span><span className="action__chev">→</span></Link>
           <Link to="/review" className="action">
-            <span className="action__icon" aria-hidden="true">🔁</span>
+            <span className="action__icon" aria-hidden="true"><Icon name="repeat" /></span>
             <span className="action__body">
               <span className="action__title">
                 Повторить ошибки {s.weak > 0 && <span className="pill">{s.weak}</span>}
@@ -96,7 +97,7 @@ export default function LearnScreen() {
 
           {s.fresh > 0 && (
             <Link to="/insight/new" className="action">
-              <span className="action__icon" aria-hidden="true">🆕</span>
+              <span className="action__icon" aria-hidden="true"><Icon name="plus" /></span>
               <span className="action__body">
                 <span className="action__title">
                   Ещё не изучены <span className="pill pill--soft">{s.fresh}</span>

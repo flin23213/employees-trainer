@@ -3,6 +3,7 @@ import type { EmployeeWithProgress } from '../types'
 import type { AnswerField } from './answerCheck'
 
 export type QuizMode = 'mixed' | 'input' | 'choice'
+export type QuizTopic = 'roles' | 'departments' | 'all'
 
 export type Question = {
   employee: EmployeeWithProgress
@@ -18,54 +19,68 @@ export type Question = {
 
 type QType =
   | 'title-by-name' | 'name-by-title' | 'dept-by-name' | 'name-by-description'
-  | 'choice-title' | 'choice-name'
+  | 'choice-title' | 'choice-name' | 'choice-dept'
 
-const INPUT_TYPES: QType[] = ['title-by-name', 'name-by-title', 'dept-by-name', 'name-by-description']
-const CHOICE_TYPES: QType[] = ['choice-title', 'choice-name']
+const TOPICS: Record<QuizTopic, { input: QType[]; choice: QType[] }> = {
+  roles: { input: ['title-by-name', 'name-by-title'], choice: ['choice-title', 'choice-name'] },
+  departments: { input: ['dept-by-name'], choice: ['choice-dept'] },
+  all: {
+    input: ['title-by-name', 'name-by-title', 'dept-by-name', 'name-by-description'],
+    choice: ['choice-title', 'choice-name', 'choice-dept'],
+  },
+}
 
-function shuffle<T>(items: T[]): T[] {
+function shuffle<T>(items: T[], random: () => number): T[] {
   const arr = [...items]
   for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
+    const j = Math.floor(random() * (i + 1))
     ;[arr[i], arr[j]] = [arr[j], arr[i]]
   }
   return arr
 }
-
-
+function normalize(value: string): string {
+  return value.trim().replace(/\s+/g, ' ').toLocaleLowerCase('ru').replace(/ё/g, 'е')
+}
 
 /** Уникальные непустые значения */
 function uniq(values: (string | null)[]): string[] {
-  return Array.from(new Set(values.filter((v): v is string => !!v && v.trim() !== '')))
+  const found = new Map<string, string>()
+  for (const value of values) {
+    if (value?.trim() && !found.has(normalize(value))) found.set(normalize(value), value.trim())
+  }
+  return [...found.values()]
 }
 
 /** Собираем 4 варианта: правильный + 3 неправильных */
-function makeOptions(correct: string, wrongPool: string[]): string[] | null {
-  const wrong = shuffle(uniq(wrongPool).filter((v) => v !== correct)).slice(0, 3)
+function makeOptions(correct: string, wrongPool: string[], random: () => number): string[] | null {
+  const wrong = shuffle(uniq(wrongPool).filter((v) => normalize(v) !== normalize(correct)), random).slice(0, 3)
   if (wrong.length < 3) return null            // мало данных для выбора из четырёх
-  return shuffle([correct, ...wrong])
+  return shuffle([correct, ...wrong], random)
 }
 
 function makeQuestion(
   employee: EmployeeWithProgress,
   type: QType,
-  all: EmployeeWithProgress[]
+  all: EmployeeWithProgress[],
+  random: () => number
 ): Question | null {
   const others = all.filter((e) => e.id !== employee.id)
 
   switch (type) {
     case 'title-by-name':
+      if (!employee.job_title.trim()) return null
       return {
         employee, kind: 'input', field: 'title',
         promptLabel: 'Сотрудник', promptValue: employee.full_name,
-        question: 'Какая у него должность?',
+        question: 'Какую должность занимает этот сотрудник?',
         answer: employee.job_title,
         acceptable: [employee.job_title],
       }
 
     case 'name-by-title': {
       // Верным считаем любого сотрудника с такой же должностью
-      const sameTitle = all.filter((e) => e.job_title === employee.job_title)
+      if (!employee.job_title.trim()) return null
+      const sameTitle = all.filter((e) => normalize(e.job_title) === normalize(employee.job_title))
       return {
         employee, kind: 'input', field: 'name',
         promptLabel: 'Должность', promptValue: employee.job_title,
@@ -76,11 +91,11 @@ function makeQuestion(
     }
 
     case 'dept-by-name':
-      if (!employee.department) return null
+      if (!employee.department?.trim()) return null
       return {
         employee, kind: 'input', field: 'dept',
         promptLabel: 'Сотрудник', promptValue: employee.full_name,
-        question: 'В каком отделе он работает?',
+        question: 'В каком отделе работает этот сотрудник?',
         answer: employee.department,
         acceptable: [employee.department],
       }
@@ -96,12 +111,13 @@ function makeQuestion(
       }
 
     case 'choice-title': {
-      const options = makeOptions(employee.job_title, others.map((e) => e.job_title))
+      if (!employee.job_title.trim()) return null
+      const options = makeOptions(employee.job_title, others.map((e) => e.job_title), random)
       if (!options) return null
       return {
         employee, kind: 'choice', field: 'title',
         promptLabel: 'Сотрудник', promptValue: employee.full_name,
-        question: 'Выберите его должность',
+        question: 'Выберите должность этого сотрудника',
         answer: employee.job_title,
         acceptable: [employee.job_title],
         options,
@@ -111,15 +127,31 @@ function makeQuestion(
     case 'choice-name': {
       // Неправильные варианты берём только среди людей с ДРУГОЙ должностью,
       // иначе вариант тоже оказался бы верным
-      const pool = others.filter((e) => e.job_title !== employee.job_title).map((e) => e.full_name)
-      const options = makeOptions(employee.full_name, pool)
+      if (!employee.job_title.trim()) return null
+      const sameTitle = all.filter((e) => normalize(e.job_title) === normalize(employee.job_title))
+      const pool = others.filter((e) => normalize(e.job_title) !== normalize(employee.job_title)).map((e) => e.full_name)
+      const options = makeOptions(employee.full_name, pool, random)
       if (!options) return null
       return {
         employee, kind: 'choice', field: 'name',
         promptLabel: 'Должность', promptValue: employee.job_title,
         question: 'Кто занимает эту должность?',
         answer: employee.full_name,
-        acceptable: [employee.full_name],
+        acceptable: sameTitle.map((e) => e.full_name),
+        options,
+      }
+    }
+
+    case 'choice-dept': {
+      if (!employee.department?.trim()) return null
+      const options = makeOptions(employee.department, others.map((e) => e.department ?? ''), random)
+      if (!options) return null
+      return {
+        employee, kind: 'choice', field: 'dept',
+        promptLabel: 'Сотрудник', promptValue: employee.full_name,
+        question: 'Выберите отдел этого сотрудника',
+        answer: employee.department,
+        acceptable: [employee.department],
         options,
       }
     }
@@ -133,20 +165,23 @@ function makeQuestion(
 export function buildQuiz(
   list: EmployeeWithProgress[],
   mode: QuizMode,
-  size = 10
+  size = 10,
+  topic: QuizTopic = 'roles',
+  random: () => number = Math.random
 ): Question[] {
   if (list.length === 0) return []
 
-  const allowed =
-    mode === 'input' ? INPUT_TYPES : mode === 'choice' ? CHOICE_TYPES : [...INPUT_TYPES, ...CHOICE_TYPES]
+  const types = TOPICS[topic]
+  const allowed = mode === 'input' ? types.input : mode === 'choice' ? types.choice : [...types.input, ...types.choice]
 
-  const pool = shuffle([...list].sort((a, b) => b.priority - a.priority).slice(0, Math.max(size * 2, 20)))
+  const pool = shuffle([...list].filter((e) => e.full_name.trim()).sort((a, b) => b.priority - a.priority)
+    .slice(0, Math.max(size * 2, 20)), random)
 
   const questions: Question[] = []
   for (const employee of pool) {
     if (questions.length >= size) break
-    for (const type of shuffle(allowed)) {
-      const q = makeQuestion(employee, type, list)
+    for (const type of shuffle(allowed, random)) {
+      const q = makeQuestion(employee, type, list, random)
       if (q) { questions.push(q); break }
     }
   }
