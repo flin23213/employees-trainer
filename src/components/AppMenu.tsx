@@ -144,9 +144,14 @@ export default function AppMenu({ open, onClose, theme, onToggleTheme }: Props) 
                   <span>{item.label}</span>
                 </NavLink>)}
                 {group.id === 'account' && <>
-                  <button className="drawer__item" onClick={onToggleTheme}>
-                    <span className="drawer__icon"><Icon name={theme === 'light' ? 'moon' : 'sun'} /></span>
-                    <span>{theme === 'light' ? 'Тёмная тема' : 'Светлая тема'}</span>
+                  <button type="button" className="drawer__item drawer__theme-switch" role="switch"
+                    aria-label="Тёмная тема" aria-checked={theme === 'dark'} onClick={onToggleTheme}>
+                    <span className="drawer__icon"><Icon name="moon" /></span>
+                    <span className="drawer__theme-copy">
+                      <span>Тёмная тема</span>
+                      <span className="drawer__theme-state" aria-hidden="true">{theme === 'dark' ? 'Включена' : 'Выключена'}</span>
+                    </span>
+                    <span className={'switch' + (theme === 'dark' ? ' is-on' : '')} aria-hidden="true" />
                   </button>
                   <button className="drawer__item drawer__item--danger"
                     onClick={() => { void signOut().then(onClose).catch(() => alert('Не удалось выйти. Проверьте соединение и попробуйте снова.')) }}>

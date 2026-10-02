@@ -110,6 +110,8 @@ export default function App() {
         <Route path="/games" element={<GamesScreen />} />
         <Route path="/games/match" element={<GameScreen key="match" mode="match" />} />
         <Route path="/games/quiz" element={<GameScreen key="quiz" mode="quiz" />} />
+        <Route path="/games/truth" element={<GameScreen key="truth" mode="truth" />} />
+        <Route path="/games/memory" element={<GameScreen key="memory" mode="memory" />} />
         <Route path="/privacy" element={<PrivacyScreen />} />
         <Route path="/employees" element={<EmployeesScreen />} />
         <Route path="/import" element={<ImportScreen />} />

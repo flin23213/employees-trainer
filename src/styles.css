@@ -79,7 +79,9 @@
 .game-ready > p { font-size:1.05rem; }
 .game-ready > p.small { font-size:.85rem; }
 .game-settings { display:grid; grid-template-columns:1fr 1fr; gap:16px; text-align:left; font-size:.85rem; }
-.game-settings select { margin-top:8px; }
+.game-settings .input { margin-top:8px; }
+.game-settings label > small { display:block; color:var(--text-muted); line-height:1.4; margin-top:6px; }
+.game-settings input[aria-invalid=true] { border-color:var(--danger); }
 .game-settings label { min-width:0; }
 .game-settings__wide { grid-column:1 / -1; }
 .game-presets { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin:20px 0; }
@@ -120,6 +122,16 @@
 .quiz-board { padding:24px 0 10px; text-align:center; }
 .quiz-board h2 { font-size:1.8rem; margin:14px auto 32px; max-width:600px; }
 .quiz-options { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+.truth-board { max-width:680px; margin:auto; }
+.truth-board h2 { margin-bottom:16px; }
+.truth-role { display:flex; align-items:center; justify-content:center; gap:12px; padding:24px; border:1px solid var(--border); border-radius:18px; background:var(--bg-elevated); font-size:1.1rem; overflow-wrap:anywhere; }
+.truth-role svg { flex:none; color:var(--primary); }
+.truth-options { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-top:24px; }
+.truth-options .match-cell { min-height:64px; }
+.memory-cell { min-height:118px; }
+.memory-cell:not(.is-flipped) { background:var(--primary-soft); border-color:var(--border); }
+.memory-cell__back { display:flex; align-items:center; gap:8px; color:var(--primary); font-size:1.2rem; }
+.memory-cell.is-flipped:not(.is-matched):not(.is-wrong) { border-color:var(--primary); }
 @keyframes answer-shake { 0%,100% { transform:translateX(0); } 20%,60% { transform:translateX(-4px); } 40%,80% { transform:translateX(4px); } }
 @keyframes answer-glow { 0%,100% { box-shadow:0 0 0 2px var(--success-soft); } 50% { box-shadow:0 0 0 6px var(--success-soft); } }
 .game-result { text-align:center; max-width:540px; margin:40px auto; }
@@ -684,6 +696,9 @@ button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
 .drawer__group-items .drawer__icon svg { width:20px; height:20px; }
 .drawer__account-chev svg { width:18px; height:18px; }
 .drawer__close { padding-inline:8px; }
+.drawer__theme-copy { display:grid; gap:3px; flex:1; min-width:0; }
+.drawer__theme-state { font-size:.76rem; color:var(--text-muted); }
+.drawer__theme-switch:focus-visible { outline:3px solid var(--primary); outline-offset:2px; }
 @media(hover:hover) { .drawer__group-title:hover { background:var(--bg-subtle); } }
 body.no-scroll { overflow: hidden; }
 .section {
