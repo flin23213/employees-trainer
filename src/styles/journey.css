@@ -13,7 +13,6 @@
 .today-details summary:focus-visible,.journey-help summary:focus-visible { outline:2px solid var(--primary); outline-offset:4px; border-radius:4px; }
 .today-details > p { margin:14px 0 10px; }
 .today-details > a { font-size:.85rem; }
-.home-welcome > .module-icon { margin-bottom:20px; }
 .home-welcome p { overflow-wrap:anywhere; }
 .journey-steps { padding:0; margin:24px 0; list-style:none; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
 .journey-steps li { display:flex; align-items:flex-start; gap:8px; font-size:.8rem; color:var(--text-muted); }

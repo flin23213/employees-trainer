@@ -120,9 +120,9 @@ export default function App() {
         <Route path="/import" element={<ImportScreen />} />
         {/* Развилка: сначала выбор вида занятия, потом брифинг с настройками */}
         <Route path="/learn" element={<LearnScreen />} />
-        <Route path="/cards" element={<CardsScreen mode="all" />} />
+        <Route path="/cards" element={<CardsScreen key="all" mode="all" />} />
         <Route path="/test" element={<TestScreen />} />
-        <Route path="/review" element={<CardsScreen mode="review" />} />
+        <Route path="/review" element={<CardsScreen key="review" mode="review" />} />
         <Route path="/stats" element={<StatsScreen />} />
         <Route path="/profile" element={<ProfileScreen />} />
         <Route path="/share" element={<ShareScreen />} />

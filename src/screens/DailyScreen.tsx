@@ -1,6 +1,9 @@
 import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
+import SessionOutcome from '../components/SessionOutcome'
+import LearningArtwork from '../components/LearningArtwork'
+import Icon from '../components/Icon'
 import { useLearning } from '../lib/learning'
 import { makeDailyPlan, nextReviewText, type LearningEmployee } from '../lib/dailyPlan'
 import { recordAnswer } from '../lib/employees'
@@ -34,10 +37,10 @@ export default function DailyScreen() {
   }
   return <main className="container daily-page"><AppHeader title="Занятие на сегодня" back />
     {!deck ? <section className="today-card">
-      <span className="eyebrow">ВАША БИБЛИОТЕКА · КОРОТКОЕ ЗАНЯТИЕ</span>
+      <div className="learning-hero"><div><span className="eyebrow">ВАША БИБЛИОТЕКА · КОРОТКОЕ ЗАНЯТИЕ</span>
       <h1>{loading ? 'Собираю карточки…' : plan.cards.length ? `${plan.cards.length} карточек на сегодня` : 'Всё на сегодня'}</h1>
+      <p className="muted">Сначала вспомните должность, затем откройте ответ и честно отметьте, знаете ли сотрудника.</p></div><LearningArtwork variant="study" /></div>
       {error ? <><p role="alert">{error}</p><button className="btn" onClick={()=>void reload()}>Повторить</button></> : <>
-        <p className="muted">Сначала вспомните должность, затем откройте ответ и честно отметьте, знаете ли сотрудника. Ответы сохраняются после каждой карточки.</p>
         {!loading && plan.cards.length>0 && <button className="btn btn--primary btn--block" onClick={()=>setDeck(plan.cards)}>Начать · около 5 минут</button>}
         {!loading && !plan.cards.length && <Link to="/library" className="btn btn--primary">Открыть библиотеку</Link>}
         <p className="small muted">После успешного повторения интервалы растут: 1, 3, 7, 14 и 30 дней. После ошибки вернём карточку через час. Дневной план — до 10 сотрудников.</p>
@@ -52,10 +55,14 @@ export default function DailyScreen() {
       </button>
       {problem && <p role="alert" className="answer-wrong">{problem}</p>}
       {revealed && <div className="daily-actions"><button className="btn btn--ghost" disabled={busy||failedAnswer===true} onClick={()=>void answer(false)}>Не знаю</button><button className="btn btn--primary" disabled={busy||failedAnswer===false} onClick={()=>void answer(true)}>{busy ? 'Сохраняю…' : 'Знаю'}</button></div>}
-    </> : <section className="today-card"><span className="eyebrow">ЗАНЯТИЕ ЗАВЕРШЕНО</span><h1>{correctCount} из {deck.length} — знаете</h1>
-      <p className="muted">Ответы сохранены. Следующее повторение уже запланировано.</p>
-      {error ? <p role="alert">Ответы сохранены, но не удалось обновить расписание. <button className="btn btn--sm" onClick={()=>void reload()}>Обновить</button></p> : <ul className="review-schedule">{deck.map(e=><li key={e.id}><strong>{e.full_name}</strong><span>{nextReviewText(rows.find(r=>r.id===e.id)?.review_due_at ?? null)}</span></li>)}</ul>}
-      <Link to="/" className="btn btn--primary btn--block">Готово — на главную</Link><Link to="/profile#reminders" className="link-quiet">Напомнить о следующем занятии</Link>
-    </section>}
+    </> : <SessionOutcome tone={correctCount === deck.length ? 'complete' : 'practice'} eyebrow="ЗАНЯТИЕ НА СЕГОДНЯ" title={correctCount ? `Вы вспомнили ${correctCount} из ${deck.length}` : 'Первый шаг сделан'} description="Это ваша самооценка после открытия карточек. Ответы сохранены, а тренажёр учтёт их при следующем занятии." metrics={[
+      { label: 'Вспомнили', value: correctCount },
+      { label: 'Повторить', value: deck.length - correctCount },
+      { label: 'Карточек', value: deck.length },
+    ]}>
+      <p className="session-outcome__note">{correctCount === deck.length ? 'Следующее повторение уже запланировано. Короткие занятия помогают удерживать имена в памяти.' : 'Карточки, которые пока не вспомнились, появятся раньше. Вам не нужно собирать их заново.'}</p>
+      {error ? <p role="alert">Ответы сохранены, но не удалось обновить расписание. <button className="btn btn--sm" onClick={()=>void reload()}>Обновить</button></p> : <details className="session-outcome__review"><summary>Когда повторять коллег<Icon name="chevron" /></summary><ul className="review-schedule">{deck.map(e=><li key={e.id}><strong>{e.full_name}</strong><span>{nextReviewText(rows.find(r=>r.id===e.id)?.review_due_at ?? null)}</span></li>)}</ul></details>}
+      <div className="stack"><Link to="/" className="btn btn--primary btn--block">Готово — на главную</Link><Link to="/profile#reminders" className="btn btn--ghost">Напомнить о следующем занятии</Link></div>
+    </SessionOutcome>}
   </main>
 }

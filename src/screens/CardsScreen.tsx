@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
 import Briefing, { Segmented, SwitchRow } from '../components/Briefing'
 import TrainingScope from '../components/TrainingScope'
+import SessionOutcome from '../components/SessionOutcome'
 import { recordAnswer, useEmployees, type SessionMode } from '../lib/employees'
 import { useLists } from '../lib/lists'
 import { filterTrainingEmployees, scopeForList, type ListTrainingScope } from '../lib/trainingScope'
@@ -383,15 +384,14 @@ export default function CardsScreen({ mode }: { mode: SessionMode }) {
       return (
         <div className="container fade-in" ref={page}>
           <AppHeader title={TITLES[mode]} back />
-          <div className="card card--pad-lg center">
-            <p className="brief__icon" aria-hidden="true"><Icon name="check" /></p>
-            <p><strong>Повторять нечего</strong></p>
-            <p className="muted small">Слабых мест нет. Загляните позже или пройдите тест.</p>
+          <SessionOutcome tone="practice" eyebrow="СОСТАВ ЗАНЯТИЯ" title="Нет карточек для занятия"
+            description="Для выбранного состава и настроек карточки не собраны. Измените настройки или проверьте себя тестом.">
             <div className="stack">
-              <Link to="/test" className="btn btn--primary">Пройти тест</Link>
+              <button className="btn btn--primary" onClick={backToBrief}>Изменить настройки</button>
+              <Link to="/test" className="btn"><Icon name="check" />Пройти тест</Link>
               <Link to="/" className="btn btn--ghost">На главную</Link>
             </div>
-          </div>
+          </SessionOutcome>
         </div>
       )
     }
@@ -400,40 +400,25 @@ export default function CardsScreen({ mode }: { mode: SessionMode }) {
       <div className="container fade-in" ref={page}>
         <AppHeader title="Занятие завершено" back />
 
-        <div className="card card--pad-lg center celebrate">
-          <p className="brief__icon" aria-hidden="true"><Icon name="check" /></p>
-          <h2 style={{ margin: '4px 0' }}>{known} из {total}</h2>
-          <p className="muted">Узнали {percent}% колоды</p>
-
-          <div className="progress" style={{ marginBottom: 16 }}>
-            <div
-              className={'progress__bar' + (percent >= 80 ? ' progress__bar--success' : '')}
-              style={{ width: `${percent}%` }}
-            />
-          </div>
-
-          <div className="grid grid-2" style={{ marginBottom: 16 }}>
-            <div className="card stat">
-              <div className="stat__value" style={{ color: 'var(--success)' }}>{known}</div>
-              <div className="stat__label">знаю</div>
-            </div>
-            <div className="card stat">
-              <div className="stat__value" style={{ color: 'var(--danger)' }}>{unknown}</div>
-              <div className="stat__label">не знаю</div>
-            </div>
-          </div>
-
-          {saveError && <div className="card answer-wrong small" style={{ marginBottom: 12 }}>{saveError}</div>}
-
+        <SessionOutcome tone={unknown > 0 ? 'practice' : 'complete'} eyebrow="САМОПРОВЕРКА ЗАВЕРШЕНА"
+          title={`Вы вспомнили ${known} из ${total}`}
+          description="Кнопка «Знаю» — ваша самооценка, а не проверка правильности ответа. Тест поможет проверить, что удалось запомнить."
+          metrics={[
+            { label: 'Вспомнили', value: known, note: 'Карточки «Знаю»' },
+            { label: 'Повторить', value: unknown, note: 'Карточки «Не знаю»' },
+            { label: 'Самооценка', value: `${percent}%`, note: 'Доля карточек «Знаю»' },
+          ]}>
+          <p className="session-outcome__note">{unknown > 0 ? 'Начните с тех, кого пока не вспомнили: короткое повторение поможет закрепить имена и должности.' : 'Теперь проверьте память без подсказок: ответьте на вопросы теста.'}</p>
+          {saveError && <div className="card answer-wrong small" role="alert">{saveError} Эти ответы могут отсутствовать в прогрессе.</div>}
           <div className="stack">
-            <button className="btn btn--primary btn--lg" onClick={backToBrief}>↻ Ещё заход</button>
             {unknown > 0 && mode !== 'review' && (
-              <Link to="/review" className="btn">Повторить только ошибки</Link>
+              <Link to="/review" className="btn btn--primary btn--lg"><Icon name="repeat" />Повторить только ошибки</Link>
             )}
-            <Link to="/test" className="btn btn--ghost">Проверить себя тестом</Link>
-            <Link to="/" className="btn btn--ghost">На главную</Link>
+            <Link to="/test" className={unknown === 0 ? 'btn btn--primary btn--lg' : 'btn'}><Icon name="check" />Проверить себя тестом</Link>
+            <button className={unknown > 0 && mode === 'review' ? 'btn btn--primary btn--lg' : 'btn btn--ghost'} onClick={backToBrief}><Icon name="repeat" />Ещё заход</button>
+            <Link to="/" className="btn btn--ghost"><Icon name="home" />На главную</Link>
           </div>
-        </div>
+        </SessionOutcome>
       </div>
     )
   }

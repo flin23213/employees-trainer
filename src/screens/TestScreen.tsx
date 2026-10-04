@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
 import Briefing, { Segmented } from '../components/Briefing'
 import TrainingScope from '../components/TrainingScope'
+import SessionOutcome from '../components/SessionOutcome'
 import Icon from '../components/Icon'
 import { recordAnswer, useEmployees } from '../lib/employees'
 import { useLists } from '../lib/lists'
@@ -59,6 +60,8 @@ export default function TestScreen() {
   const [result, setResult] = useState<CheckResult>({ verdict: 'wrong' })
   const [correctCount, setCorrectCount] = useState(0)
   const [wrongList, setWrongList] = useState<Question[]>([])
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const saveGeneration = useRef(0)
   const submitted = useRef(false)
   const almostResolved = useRef(false)
   const page = useRef<HTMLDivElement>(null)
@@ -91,6 +94,8 @@ export default function TestScreen() {
     if (loading || listsLoading || !active) return
     const q = makeQuestions(settings)
     if (!q.length) return
+    saveGeneration.current++
+    setSaveError(null)
     setQuestions(q)
     setIndex(0)
     setInput('')
@@ -117,6 +122,7 @@ export default function TestScreen() {
 
   /** Записываем результат в базу и запоминаем для итогов */
   async function commit(question: Question, isCorrect: boolean) {
+    const generation = saveGeneration.current
     if (isCorrect) setCorrectCount((n) => n + 1)
     else setWrongList((prev) => (prev.includes(question) ? prev : [...prev, question]))
 
@@ -124,7 +130,7 @@ export default function TestScreen() {
     try {
       await recordAnswer(question.employee.id, isCorrect)
     } catch {
-      /* не мешаем занятию: статистика догонит при следующем ответе */
+      if (generation === saveGeneration.current) setSaveError('Не удалось сохранить один или несколько ответов. Они могут отсутствовать в прогрессе. Результат этого теста показан ниже.')
     }
   }
 
@@ -298,41 +304,37 @@ export default function TestScreen() {
         <AppHeader title="Тест завершён" back />
 
         {total === 0 ? (
-          <div className="card center">
-            <p><strong>Не удалось собрать вопросы</strong></p>
-            <p className="muted small">
-              Добавьте данные для выбранной темы или выберите режим «Ввод».
-              Для выбора из вариантов нужны четыре разных должности или отдела.
-            </p>
+          <SessionOutcome tone="practice" eyebrow="СОСТАВ ТЕСТА" title="Не удалось собрать вопросы"
+            description="Добавьте данные для выбранной темы или выберите режим «Ввод». Для выбора из вариантов нужны четыре разных должности или отдела.">
             <button className="btn btn--primary" onClick={() => setPhase('brief')}>Назад к настройкам</button>
-          </div>
+          </SessionOutcome>
         ) : (
-          <div className="card card--pad-lg center">
-            <p className="result-icon"><Icon name={percent >= 80 ? 'check' : 'chart'} /></p>
-            <h2 style={{ margin: '4px 0' }}>{correctCount} из {total}</h2>
-            <p className="muted">Правильных ответов: {percent}%</p>
-            <div className="progress" style={{ marginBottom: 16 }}>
-              <div className={`progress__bar${percent >= 80 ? ' progress__bar--success' : ''}`} style={{ width: `${percent}%` }} />
-            </div>
-
+          <SessionOutcome tone={percent >= 80 ? 'complete' : 'practice'} eyebrow="РЕЗУЛЬТАТ ТЕСТА"
+            title={correctCount === 0 ? 'Начнём с повторения' : `Вы ответили верно на ${correctCount} из ${total}`}
+            description={correctCount === 0 ? 'В этом тесте пока нет правильных ответов. Сначала повторите коллег по карточкам, затем попробуйте снова.' : wrongList.length > 0 ? 'Посмотрите, где возникли ошибки, и закрепите эти имена и должности карточками.' : 'Позже вернитесь к короткому повторению, чтобы закрепить результат.'}
+            metrics={[
+              { label: 'Точность', value: `${percent}%` },
+              { label: 'Верно', value: `${correctCount} / ${total}`, note: 'Ответы этого теста' },
+              { label: 'Повторить', value: wrongList.length, note: 'Вопросы с ошибками' },
+            ]}>
+            {saveError && <div className="card answer-wrong small" role="alert">{saveError}</div>}
             {wrongList.length > 0 && (
-              <div className="card" style={{ textAlign: 'left', marginBottom: 16 }}>
-                <strong className="small">Ошибки этого теста:</strong>
-                <ul className="small" style={{ paddingLeft: 18, marginBottom: 0 }}>
+              <details className="session-outcome__review">
+                <summary><span>Разобрать ошибки ({wrongList.length})</span><Icon name="chevron" /></summary>
+                <ul>
                   {wrongList.map((q, i) => (
                     <li key={i}>{q.employee.full_name} — {q.employee.job_title}</li>
                   ))}
                 </ul>
-              </div>
+              </details>
             )}
-
             <div className="stack">
-              <button className="btn btn--primary btn--lg" onClick={() => setPhase('brief')}><Icon name="repeat" /> Пройти ещё раз</button>
-              {wrongList.length > 0 && <Link to="/review" className="btn"><Icon name="cards" /> Повторить ошибки карточками</Link>}
+              {wrongList.length > 0 && <Link to="/review" className="btn btn--primary btn--lg"><Icon name="cards" /> Повторить ошибки карточками</Link>}
+              <button className={wrongList.length === 0 ? 'btn btn--primary btn--lg' : 'btn'} onClick={() => setPhase('brief')}><Icon name="repeat" /> Пройти ещё раз</button>
               <Link to="/insight/weak" className="btn btn--ghost"><Icon name="chart" /> Мои слабые места</Link>
               <Link to="/" className="btn btn--ghost"><Icon name="home" /> На главную</Link>
             </div>
-          </div>
+          </SessionOutcome>
         )}
       </div>
     )

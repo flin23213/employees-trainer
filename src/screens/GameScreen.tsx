@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
 import GameLeaderboard from '../components/GameLeaderboard'
 import GameArtwork from '../components/GameArtwork'
+import SessionOutcome from '../components/SessionOutcome'
 import TrainingScope from '../components/TrainingScope'
 import Icon from '../components/Icon'
 import { useLists } from '../lib/lists'
@@ -266,15 +267,18 @@ export default function GameScreen({ mode }: { mode: GameMode }) {
       <button className="btn btn--ghost btn--block" disabled={busy} onClick={() => { if (window.confirm('Завершить раунд? Незаконченный результат не сохранится.')) { finished.current = true; if (lockTimer.current) clearTimeout(lockTimer.current); setPhase('ready') } }}>Завершить раунд</button>
     </>}
     {(phase === 'done' || phase === 'timeout') && round && <>
-      <section className="game-result"><div className="game-result__icon"><Icon name={phase === 'done' ? 'check' : 'clock'} /></div><h1>{phase === 'done' ? 'Отличный раунд!' : 'Время вышло'}</h1>
-        <p>{round.listName} · {matchedNames.length} из {round.people.length} {pairMode ? 'пар' : 'заданий'}</p>
+      <SessionOutcome className="game-result" tone={phase === 'timeout' ? 'timeout' : mistakes ? 'practice' : 'complete'} eyebrow={phase === 'timeout' ? 'ПОПРОБУЕМ В ДРУГОМ ТЕМПЕ' : 'ЛИЧНЫЙ РЕЗУЛЬТАТ'} title={phase === 'done' ? 'Раунд завершён' : 'Время вышло'} description={round.listName} metrics={[
+        { label: pairMode ? 'Пары' : 'Задания', value: `${matchedNames.length} / ${round.people.length}`, note: pairMode ? 'найдено' : 'пройдено' },
+        { label: 'Ошибки', value: mistakes },
+        { label: 'Штраф', value: `${mistakes * 3} с`, note: 'включён во время' },
+      ]}>
         {round.scopeKey !== 'all' && <details className="training-scope__composition"><summary>{round.scopeLabel}</summary><p>{round.scopePeople.join(', ')}</p></details>}
         <strong className="game-result__time">{formatTime(scoreTime(elapsed, mistakes))}</strong><p className="muted">{formatTime(elapsed)} на ответы + {mistakes * 3} с за ошибки</p>
-        {phase === 'done' && <p role="status">{saveState === 'saving' ? 'Сохраняю личный результат…' : saveState === 'saved' ? 'Результат сохранён в вашем аккаунте.' : 'Результат пока не сохранён. Проверьте соединение.'}</p>}
+        {phase === 'done' && <p className="session-outcome__status" role={saveState === 'error' ? 'alert' : 'status'}>{saveState === 'saving' ? 'Сохраняю личный результат…' : saveState === 'saved' ? 'Результат сохранён в вашем аккаунте.' : 'Результат пока не сохранён. Проверьте соединение.'}</p>}
         {phase === 'done' && saveState === 'error' && result && <button className="btn btn--primary" onClick={() => void persist(result)}>Повторить сохранение</button>}
-        {phase === 'timeout' && <p className="muted small">Этот раунд не попал в рекорды. Попробуйте меньше заданий или больше времени.</p>}
+        {phase === 'timeout' && <p className="session-outcome__note">Этот раунд не попал в рекорды. Уменьшите число заданий или увеличьте время перед следующим стартом.</p>}
         <div className="stack"><button className="btn btn--primary btn--block" disabled={phase === 'done' && saveState !== 'saved'} onClick={() => setPhase('ready')}>Ещё раз</button><Link to="/games" className="btn btn--ghost">Все игры</Link></div>
-      </section>
+      </SessionOutcome>
       <GameLeaderboard listId={round.listId} mode={mode} count={round.people.length} timeLimit={round.limit} scopeKey={round.scopeKey} scopeLabel={round.scopeLabel} revision={revision} />
     </>}
   </div>

@@ -4,10 +4,12 @@ import AppHeader from '../components/AppHeader'
 import Icon from '../components/Icon'
 import AuthorLinks from '../components/AuthorLinks'
 import TodayCard from '../components/TodayCard'
+import LearningArtwork from '../components/LearningArtwork'
 import LoadError from '../components/LoadError'
 import { useLists, setActiveList } from '../lib/lists'
 import '../styles/journey.css'
 import '../styles/demo.css'
+import '../styles/outcome.css'
 
 export default function HomeScreen() {
   const { lists, loading, error, reload } = useLists()
@@ -32,10 +34,9 @@ export default function HomeScreen() {
     {error && <LoadError message={error} onRetry={() => void reload()} />}
     {problem && <p className="card answer-wrong" role="alert">{problem}</p>}
     {loading ? <section className="module-card" role="status">Загружаю вашу библиотеку…</section> : hasPeople ? <TodayCard /> : !error && <section className="today-card home-welcome">
-      <span className="module-icon module-icon--welcome"><Icon name="library" /></span>
-      <span className="eyebrow">НАЧНИТЕ С ВАШЕЙ КОМАНДЫ</span>
+      <div className="learning-hero"><div><span className="eyebrow">НАЧНИТЕ С ВАШЕЙ КОМАНДЫ</span>
       <h2>{starter ? 'Список готов. Добавим коллег?' : 'Все коллеги — по именам'}</h2>
-      <p className="muted">{starter ? `В списке «${starter.name}» пока нет сотрудников. Загрузите файл или фото либо добавьте их вручную.` : 'Соберите имена и должности в список. Тренажёр подберёт короткие занятия и время для повторения.'}</p>
+      <p className="muted">{starter ? `В списке «${starter.name}» пока нет сотрудников. Загрузите файл или фото либо добавьте их вручную.` : 'Соберите имена и должности в список. Тренажёр подберёт короткие занятия и время для повторения.'}</p></div><LearningArtwork variant="team" /></div>
       <ol className="journey-steps" aria-label="Как начать"><li className={starter ? 'is-complete' : ''}><span>1</span>Создать список</li><li><span>2</span>Добавить коллег</li><li><span>3</span>Начать занятие</li></ol>
       {starter ? <button className="btn btn--primary btn--block btn--lg" disabled={busy} onClick={() => void addPeople()}>{busy ? 'Открываю…' : 'Добавить сотрудников'}<Icon name="arrow" /></button> : <Link className="btn btn--primary btn--block btn--lg" to="/create">Создать первый список<Icon name="plus" /></Link>}
     </section>}

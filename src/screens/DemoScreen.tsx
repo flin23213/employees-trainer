@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react'
 import { useAuth } from '../auth/AuthProvider'
 import Icon from '../components/Icon'
+import SessionOutcome from '../components/SessionOutcome'
+import LearningArtwork from '../components/LearningArtwork'
 import '../styles/demo.css'
 
 const TEAM = [
@@ -47,7 +49,7 @@ export default function DemoScreen() {
     <header className="demo-header"><a className="btn btn--ghost btn--sm" href="/">{back}</a><span className="pill pill--soft">Пробное занятие</span></header>
     <p className="demo-context small muted">Вымышленная команда · ответы не сохраняются</p>
     {phase === 'intro' && <section className="demo-intro">
-      <div className="demo-artwork" aria-hidden="true">{TEAM.map((person, i) => <span className={`demo-person demo-person--${i}`} key={person.name}>{person.initials}</span>)}</div>
+      <LearningArtwork variant="team" className="demo-intro-artwork" />
       <span className="eyebrow">ОДНА МИНУТА, ЧТОБЫ РАЗОБРАТЬСЯ</span><h1>Знакомимся с командой</h1>
       <p className="muted">Посмотрите три карточки, затем попробуйте вспомнить должности. Так же будут устроены занятия с вашими коллегами.</p>
       <button className="btn btn--primary btn--block btn--lg" onClick={() => setPhase('cards')}>Попробовать карточки<Icon name="arrow" /></button>
@@ -67,11 +69,14 @@ export default function DemoScreen() {
       <div className="demo-options">{TEAM.map(person => <button key={person.role} disabled={choice !== null} onClick={() => answer(person.role)} className={`btn${choice === null ? '' : person.role === question.role ? ' answer-correct' : person.role === choice ? ' answer-wrong shake' : ''}`}>{person.role}{choice !== null && person.role === question.role && <Icon name="check" />}</button>)}</div>
       {choice !== null && <div role="status" className="demo-feedback"><p>{choice === question.role ? 'Верно, вы запомнили!' : `Правильный ответ: ${question.role}. В обычном занятии тренажёр вернётся к этому сотруднику.`}</p><button className="btn btn--primary btn--block" onClick={nextQuestion}>{index === QUESTIONS.length - 1 ? 'Посмотреть итог' : 'Следующий вопрос'}<Icon name="arrow" /></button></div>}
     </section>}
-    {phase === 'done' && <section className="demo-intro demo-result" aria-live="polite">
-      <span className="demo-result-icon" aria-hidden="true"><Icon name="check" /></span><span className="eyebrow">ПЕРВОЕ ЗНАКОМСТВО ЗАВЕРШЕНО</span><h1>{score} из {QUESTIONS.length} — правильно</h1>
-      <p className="muted">Теперь можно добавить свою команду. Сотрудники попадут в карточки, тесты и игры, а ответы будут сохраняться в вашем аккаунте.</p>
+    {phase === 'done' && <SessionOutcome className="demo-result" tone={score === QUESTIONS.length ? 'complete' : 'practice'} eyebrow="ПРОБНОЕ ЗАНЯТИЕ" title={score ? `${score} из ${QUESTIONS.length} — правильно` : 'Теперь вы знаете, как это работает'} description="Это был пример на вымышленной команде. Результат не записывается в аккаунт." metrics={[
+      { label: 'Верно', value: score },
+      { label: 'Повторить', value: QUESTIONS.length - score },
+      { label: 'Вопросов', value: QUESTIONS.length },
+    ]}>
+      <p className="session-outcome__note">Добавьте свою команду — имена попадут в карточки, тесты и игры. В обычном занятии тренажёр запомнит ответы и подберёт повторения.</p>
       <a className="btn btn--primary btn--block btn--lg" href={session ? '/create' : '/'}>{session ? 'Создать свой список' : 'Войти и добавить команду'}<Icon name="plus" /></a>
       <button className="btn btn--ghost btn--block" onClick={restart}>Пройти пример ещё раз</button>
-    </section>}
+    </SessionOutcome>}
   </main>
 }

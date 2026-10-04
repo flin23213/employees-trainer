@@ -4,11 +4,8 @@
 .demo-intro { text-align:center; padding:28px; border:1px solid var(--border); border-radius:28px; background:var(--bg-elevated); }
 .demo-intro h1,.demo-lesson h1 { font-size:clamp(1.45rem,4vw,2rem); line-height:1.25; letter-spacing:-.035em; }
 .demo-intro .btn { margin-top:12px; }
-.demo-artwork { display:flex; justify-content:center; align-items:center; gap:10px; min-height:120px; margin-bottom:24px; }
+.demo-intro .demo-intro-artwork { display:block; width:220px; max-width:100%; height:auto; margin:0 auto 24px; }
 .demo-person { display:inline-flex; width:58px; height:58px; flex:none; align-items:center; justify-content:center; border:1px solid var(--primary); border-radius:20px; background:var(--primary-soft); color:var(--primary); font-weight:750; }
-.demo-artwork .demo-person { width:76px; height:88px; font-size:1.4rem; box-shadow:var(--shadow); }
-.demo-artwork .demo-person--0 { transform:rotate(-9deg) translateY(12px); }
-.demo-artwork .demo-person--2 { transform:rotate(9deg) translateY(12px); }
 .demo-lesson > .eyebrow { color:var(--primary); }
 .demo-flashcard { min-height:300px; padding:32px 20px; }
 .demo-actions { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
@@ -18,9 +15,6 @@
 .demo-options .btn { justify-content:space-between; text-align:left; min-height:56px; }
 .demo-options .answer-correct,.demo-options .answer-wrong { opacity:1; }
 .demo-feedback { margin-top:20px; }
-.demo-result-icon { display:flex; align-items:center; justify-content:center; width:80px; height:80px; margin:0 auto 24px; border-radius:28px; background:var(--success-soft); color:var(--success); }
-.demo-result-icon svg { width:42px; height:42px; }
-.demo-result .eyebrow { display:block; }
 .home-example { display:flex; align-items:center; justify-content:center; gap:8px; margin:20px 0; }
 .auth-example { display:block; text-align:center; margin:18px 0 0; }
 @media(max-width:400px) { .demo-intro { padding:24px 18px; }.demo-actions { gap:8px; }.demo-actions .btn { padding-inline:12px; } }

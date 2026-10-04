@@ -1,45 +1,34 @@
 import type { GameMode } from '../lib/gameEngine'
+import { ArtworkBriefcase, ArtworkCard, ArtworkCheck, ArtworkClock, ArtworkPortrait } from './LearningArtwork'
+import '../styles/artwork.css'
 
 export default function GameArtwork({ mode }: { mode: GameMode }) {
-  return <svg className={`game-artwork game-artwork--${mode}`} viewBox="0 0 240 150" fill="none" aria-hidden="true">
+  return <svg className={`app-artwork game-artwork game-artwork--${mode}`} viewBox="0 0 240 150" fill="none" aria-hidden="true" focusable="false">
+    <ellipse className="art-ground" cx="120" cy="135" rx="91" ry="7" />
     {mode === 'match' ? <>
-      <path d="M71 42c43 0 52 63 98 63M71 108c43 0 52-63 98-63" stroke="var(--primary)" strokeWidth="3" strokeDasharray="5 6" />
-      <rect x="18" y="16" width="74" height="52" rx="14" fill="var(--primary-soft)" stroke="var(--primary)" strokeWidth="2" />
-      <rect x="148" y="80" width="74" height="52" rx="14" fill="var(--primary-soft)" stroke="var(--primary)" strokeWidth="2" />
-      <rect x="18" y="82" width="74" height="52" rx="14" fill="var(--success-soft)" stroke="var(--success)" strokeWidth="2" />
-      <rect x="148" y="14" width="74" height="52" rx="14" fill="var(--success-soft)" stroke="var(--success)" strokeWidth="2" />
-      <circle cx="55" cy="34" r="7" stroke="var(--primary)" strokeWidth="2" />
-      <path d="M43 55c0-13 24-13 24 0M174 105h22m-17-6v-5h12v5m-16 0h20v15h-20Z" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="m45 108 7 7 15-16" stroke="var(--success)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="m175 40 7 7 15-16" stroke="var(--success)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      <path className="art-connection" d="M78 61c31-42 54-41 84 0M78 89c31 38 54 39 84 0" />
+      <ArtworkCard x={23} y={29} angle={-5} />
+      <ArtworkCard x={152} y={29} tone="mint" angle={5} kind="role" />
+      <g className="art-tone--mint"><circle className="art-paper" cx="120" cy="75" r="20" /><path className="art-mark" d="m110 78 7-7a6 6 0 0 1 9 9l-5 5m8-13-7 7a6 6 0 0 1-9-9l5-5" /></g>
+      <circle className="art-node" cx="120" cy="27" r="4" /><circle className="art-node art-tone--mint" cx="120" cy="121" r="4" />
     </> : mode === 'quiz' ? <>
-      <rect x="44" y="12" width="152" height="124" rx="22" fill="var(--primary-soft)" stroke="var(--primary)" strokeWidth="2" />
-      <circle cx="79" cy="43" r="10" stroke="var(--primary)" strokeWidth="2" />
-      <path d="M101 39h57m-57 9h40" stroke="var(--primary)" strokeWidth="3" strokeLinecap="round" />
-      <rect x="60" y="68" width="120" height="22" rx="7" fill="var(--success-soft)" stroke="var(--success)" />
-      <path d="m70 79 4 4 8-9" stroke="var(--success)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M93 79h67" stroke="var(--success)" strokeWidth="2" strokeLinecap="round" />
-      <rect x="60" y="98" width="120" height="22" rx="7" fill="var(--bg-elevated)" stroke="var(--border)" />
-      <path d="M73 109h87" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" />
-      <path d="m210 30-15 23h12l-4 19 22-28h-14l5-14Z" fill="var(--primary)" />
+      <path className="art-connection" d="M88 56h29m0 0v55m0-55V32m0 0h19m-19 40h19m-19 39h19" />
+      <ArtworkCard x={25} y={24} />
+      <g className="art-tone--neutral"><rect className="art-card" x="132" y="19" width="79" height="27" rx="9" /><path className="art-line art-line--muted" d="M148 32h43" /><rect className="art-card" x="132" y="98" width="79" height="27" rx="9" /><path className="art-line art-line--muted" d="M148 111h32" /></g>
+      <g className="art-tone--mint"><rect className="art-seal" x="128" y="58" width="87" height="28" rx="9" /><ArtworkCheck x={136} y={64} size={17} /><path className="art-mark" d="M160 72h38" /></g>
+      <g className="art-tone--violet"><circle className="art-paper" cx="72" cy="118" r="19" /><ArtworkClock x={53} y={99} size={38} /></g>
     </> : mode === 'truth' ? <>
-      <rect x="31" y="17" width="178" height="65" rx="19" fill="var(--primary-soft)" stroke="var(--primary)" strokeWidth="2" />
-      <circle cx="63" cy="40" r="8" stroke="var(--primary)" strokeWidth="2" />
-      <path d="M50 64c0-15 26-15 26 0M93 41h89m-89 13h63" stroke="var(--primary)" strokeWidth="3" strokeLinecap="round" />
-      <path d="M120 83v13m0 0H75m45 0h45" stroke="var(--border)" strokeWidth="2" strokeLinecap="round" />
-      <rect x="42" y="103" width="67" height="35" rx="12" fill="var(--success-soft)" stroke="var(--success)" strokeWidth="2" />
-      <path d="m65 120 7 7 15-17" stroke="var(--success)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-      <rect x="131" y="103" width="67" height="35" rx="12" fill="var(--danger-soft)" stroke="var(--danger)" strokeWidth="2" />
-      <path d="m157 113 15 15m0-15-15 15" stroke="var(--danger)" strokeWidth="3" strokeLinecap="round" />
+      <g className="art-tone--violet"><rect className="art-card-shadow" x="43" y="20" width="160" height="67" rx="17" /><rect className="art-card" x="40" y="15" width="160" height="67" rx="17" /><circle className="art-soft" cx="72" cy="48" r="20" /><ArtworkPortrait x={58} y={33} size={28} /><path className="art-line" d="M105 37h22m-22 13h15M135 27v43" /><ArtworkBriefcase x={149} y={33} size={30} /></g>
+      <path className="art-connection" d="M120 82v15m-41 0h82m-82 0v14m82-14v14" />
+      <g className="art-tone--mint"><rect className="art-seal" x="53" y="109" width="53" height="29" rx="11" /><ArtworkCheck x={69} y={114} size={20} /></g>
+      <g className="art-tone--violet"><rect className="art-soft art-bordered" x="134" y="109" width="53" height="29" rx="11" /><path className="art-mark" d="m155 118 11 11m0-11-11 11" /></g>
     </> : <>
-      <rect x="31" y="32" width="55" height="80" rx="13" fill="var(--primary-soft)" stroke="var(--primary)" strokeWidth="2" transform="rotate(-12 59 72)" />
-      <path d="M46 55h25M46 64h25M46 73h25M46 82h25M46 91h25" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" transform="rotate(-12 59 72)" />
-      <rect x="90" y="15" width="62" height="88" rx="14" fill="var(--bg-elevated)" stroke="var(--primary)" strokeWidth="2" />
-      <circle cx="121" cy="44" r="9" stroke="var(--primary)" strokeWidth="2" />
-      <path d="M105 75c0-20 32-20 32 0m-31 12h30" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" />
-      <rect x="155" y="46" width="55" height="80" rx="13" fill="var(--success-soft)" stroke="var(--success)" strokeWidth="2" transform="rotate(12 182 86)" />
-      <path d="m171 83 7 8 17-18" stroke="var(--success)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" transform="rotate(12 182 86)" />
-      <path d="M101 117c7 15 34 15 41 0m0 0-2 11m2-11-11 2" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path className="art-connection" d="M36 36c22-29 79-29 105-8m47 82c-13 28-44 37-72 28" />
+      <ArtworkCard x={29} y={40} tone="neutral" angle={-16} kind="back" />
+      <ArtworkCard x={84} y={22} angle={-2} kind="back" />
+      <ArtworkCard x={145} y={39} tone="mint" angle={13} />
+      <path className="art-direction" d="m132 16 12 13-18 2m3 99-15 7 9 11" />
+      <g className="art-tone--mint"><circle className="art-paper" cx="193" cy="112" r="15" /><ArtworkCheck x={183} y={101} size={21} /></g>
     </>}
   </svg>
 }
