@@ -135,10 +135,6 @@
 .truth-role svg { flex:none; color:var(--primary); }
 .truth-options { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-top:24px; }
 .truth-options .match-cell { min-height:64px; }
-.memory-cell { min-height:118px; }
-.memory-cell:not(.is-flipped) { background:var(--primary-soft); border-color:var(--border); }
-.memory-cell__back { display:flex; align-items:center; gap:8px; color:var(--primary); font-size:1.2rem; }
-.memory-cell.is-flipped:not(.is-matched):not(.is-wrong) { border-color:var(--primary); }
 @keyframes answer-shake { 0%,100% { transform:translateX(0); } 20%,60% { transform:translateX(-4px); } 40%,80% { transform:translateX(4px); } }
 @keyframes answer-glow { 0%,100% { box-shadow:0 0 0 2px var(--success-soft); } 50% { box-shadow:0 0 0 6px var(--success-soft); } }
 .leaderboard { border-top:1px solid var(--border); padding-top:10px; margin-top:40px; }

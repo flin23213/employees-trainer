@@ -3,19 +3,26 @@ import { Link } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
 import GameLeaderboard from '../components/GameLeaderboard'
 import GameArtwork from '../components/GameArtwork'
+import MemoryGuide from '../components/MemoryGuide'
 import SessionOutcome from '../components/SessionOutcome'
 import TrainingScope from '../components/TrainingScope'
 import Icon from '../components/Icon'
 import { useLists } from '../lib/lists'
 import { useEmployees } from '../lib/employees'
 import { GAME_META, formatTime, makeRound, makeMatchTiles, makeStatements, normalizeRole, quizOptions, rolesMatch, scoreTime, type MatchTile, type GameEmployee, type GameMode, type GameStatement } from '../lib/gameEngine'
-import { gameSetting, MIN_GAME_ITEMS, MAX_GAME_ITEMS, MIN_GAME_SECONDS, MAX_GAME_SECONDS } from '../lib/gameSettings'
+import { gameItemLimit, gamePresets, gameSetting, MIN_GAME_ITEMS, MIN_GAME_SECONDS, MAX_GAME_SECONDS } from '../lib/gameSettings'
 import { saveGameRun, type NewGameRun } from '../lib/gameRuns'
 import { ALL_TRAINING_EMPLOYEES, filterTrainingEmployees, gameTrainingScopeKey, hasTrainingFilter, scopeForList, trainingDepartments, trainingPoolSignature, type ListTrainingScope } from '../lib/trainingScope'
+import '../styles/memory.css'
 
 type Round = { id: string; listId: string; listName: string; scopeKey: string; scopeLabel: string; scopePeople: string[]; people: GameEmployee[]; tiles: MatchTile[]; options: string[][]; statements: GameStatement[]; started: number; limit: number }
 type Feedback = { text: string; tone: 'correct' | 'wrong' | ''; tiles: string[] }
-const PRESETS = [{ label: 'Разминка', size: 4, limit: 60 }, { label: 'Обычный', size: 6, limit: 120 }, { label: 'Марафон', size: 8, limit: 180 }]
+const plurals = new Intl.PluralRules('ru')
+function itemsLabel(count: number, pairs: boolean) {
+  const form = plurals.select(count)
+  return pairs ? form === 'one' ? 'пара' : form === 'few' ? 'пары' : 'пар'
+    : form === 'one' ? 'задание' : form === 'few' ? 'задания' : 'заданий'
+}
 
 export default function GameScreen({ mode }: { mode: GameMode }) {
   const { list, loading, error } = useEmployees()
@@ -32,7 +39,7 @@ export default function GameScreen({ mode }: { mode: GameMode }) {
   const scopeError = fingerprint?.signature === scopeSignature ? fingerprint.error : ''
   const departmentLabel = trainingDepartments(list).find(department => department.key === scope.department)?.label
   const scopeLabel = scopeKey === 'all' ? 'Весь список' : [departmentLabel ? `Отдел «${departmentLabel}»` : 'Выбранный состав', scope.onlyNew ? 'новые сотрудники' : '', `${available.length} сотрудников`].filter(Boolean).join(' · ')
-  const [sizeInput, setSizeInput] = useState('6')
+  const [sizeInput, setSizeInput] = useState(mode === 'memory' ? '4' : mode === 'match' ? '6' : '15')
   const [limitInput, setLimitInput] = useState('120')
   const [density, setDensity] = useState<'comfortable' | 'compact'>('comfortable')
   const [phase, setPhase] = useState<'ready' | 'play' | 'done' | 'timeout'>('ready')
@@ -57,12 +64,14 @@ export default function GameScreen({ mode }: { mode: GameMode }) {
   const inputLock = useRef(false)
   const lockTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const timing = useRef<{ pausedAt: number | null; pausedTotal: number; pauseDuration: number }>({ pausedAt: null, pausedTotal: 0, pauseDuration: 0 })
-  const size = gameSetting(sizeInput, MIN_GAME_ITEMS, MAX_GAME_ITEMS)
+  const itemLimit = gameItemLimit(mode)
+  const size = gameSetting(sizeInput, MIN_GAME_ITEMS, itemLimit)
   const limit = gameSetting(limitInput, MIN_GAME_SECONDS, MAX_GAME_SECONDS)
   const validSettings = size !== null && limit !== null
   const count = Math.min(size ?? 0, available.length)
   const enoughRoles = !['quiz', 'truth'].includes(mode) || new Set(available.map(person => normalizeRole(person.job_title))).size >= 2
   const { title, description, pairMode } = GAME_META[mode]
+  const firstMemoryTile = round?.tiles.find(tile => tile.key === revealed[0])
 
   useEffect(() => {
     let alive = true
@@ -132,7 +141,7 @@ export default function GameScreen({ mode }: { mode: GameMode }) {
   }
   function showFeedback(value: Feedback, after?: () => void, completed = false) {
     inputLock.current = true; setBusy(true); setFeedback(value)
-    const pauseDuration = value.tone === 'correct' ? 520 : 420
+    const pauseDuration = mode === 'memory' ? value.tone === 'correct' ? 800 : 1400 : value.tone === 'correct' ? 520 : 420
     // Called by answer event handlers, never during rendering.
     // eslint-disable-next-line react-hooks/purity
     timing.current.pausedAt = performance.now()
@@ -199,17 +208,15 @@ export default function GameScreen({ mode }: { mode: GameMode }) {
   }
 
   function revealTile(tile: MatchTile) {
-    if (!round || !canAnswer() || revealed.includes(tile.key)) return
+    if (!round || !canAnswer()) return
     if ((tile.kind === 'name' ? matchedNames : matchedRoles).includes(tile.employee.id)) return
+    if (revealed.length === 1 && revealed[0] === tile.key) { setRevealed([]); setFeedback({ text: '', tone: '', tiles: [] }); return }
     if (revealed.length === 0) { setRevealed([tile.key]); return }
-    const first = round.tiles.find(value => value.key === revealed[0])!
+    const first = round.tiles.find(value => value.key === revealed[0])
+    // Type is visible before opening. Impossible same-type pairs never cost a penalty.
+    if (!first || revealed.length !== 1 || first.kind === tile.kind) return
     setRevealed([first.key, tile.key])
-    if (first.kind !== tile.kind) {
-      compare(first.kind === 'name' ? first.employee.id : tile.employee.id, first.kind === 'role' ? first.employee.id : tile.employee.id)
-    } else {
-      setMistakes(value => value + 1)
-      showFeedback({ text: 'Нужны имя и должность. +3 секунды. Запомните карточки и попробуйте ещё раз.', tone: 'wrong', tiles: [first.key, tile.key] }, () => setRevealed([]))
-    }
+    compare(first.kind === 'name' ? first.employee.id : tile.employee.id, first.kind === 'role' ? first.employee.id : tile.employee.id)
   }
 
   return <div ref={page} className={`container library-page game-page game-density--${density}${phase === 'play' ? ' game-playing' : ''}`}>
@@ -218,18 +225,20 @@ export default function GameScreen({ mode }: { mode: GameMode }) {
     {phase === 'ready' && <>
       <section className="game-ready">
         <GameArtwork mode={mode} />
-        <h1>Готовы?</h1><p>{description}</p>
+        <h1>{mode === 'memory' ? 'Запомните места. Найдите пары.' : 'Готовы?'}</h1><p>{description}</p>
+        {mode === 'memory' && <MemoryGuide />}
         {mode === 'truth' && <p className="muted small">Один ответ на утверждение. После ответа покажем настоящую должность сотрудника.</p>}
         <p className="muted small">За ошибку +3 секунды. Время на подсветку ответов не учитывается. Завершённый раунд сохранится в личных результатах.</p>
         <div className="current-module"><Icon name="library" /><span>{active?.name ?? 'Список не выбран'}</span><Link to="/library">Сменить</Link></div>
         <TrainingScope key={active?.id} employees={list} value={scope} disabled={loading || listsLoading || !active} onChange={value => { if (active) setSelection({ listId: active.id, value }) }} />
-        <div className="game-presets" role="group" aria-label="Готовые настройки раунда">{PRESETS.map(preset => <button key={preset.label} className={'btn' + (size === preset.size && limit === preset.limit ? ' is-selected' : '')} aria-pressed={size === preset.size && limit === preset.limit} onClick={() => { setSizeInput(String(preset.size)); setLimitInput(String(preset.limit)) }}>{preset.label}<small>{preset.size} заданий · {preset.limit / 60} мин</small></button>)}</div>
+        <div className="game-presets" role="group" aria-label="Готовые настройки раунда">{gamePresets(mode).map(preset => <button key={preset.label} className={'btn' + (size === preset.size && limit === preset.limit ? ' is-selected' : '')} aria-pressed={size === preset.size && limit === preset.limit} onClick={() => { setSizeInput(String(preset.size)); setLimitInput(String(preset.limit)) }}>{preset.label}<small>{preset.size} {itemsLabel(preset.size, pairMode)} · {preset.limit / 60} мин</small></button>)}</div>
         <div className="game-settings">
-          <label>Заданий<input className="input" type="number" inputMode="numeric" min={MIN_GAME_ITEMS} max={MAX_GAME_ITEMS} step={1} value={sizeInput} aria-invalid={size === null} aria-describedby="game-size-help" onChange={e => setSizeInput(e.target.value)} /><small id="game-size-help">От {MIN_GAME_ITEMS} до {MAX_GAME_ITEMS}{pairMode ? ' пар' : ' заданий'}</small></label>
+          <label>{pairMode ? 'Пар' : 'Заданий'}<input className="input" type="number" inputMode="numeric" min={MIN_GAME_ITEMS} max={itemLimit} step={1} value={sizeInput} aria-invalid={size === null} aria-describedby="game-size-help" onChange={e => setSizeInput(e.target.value)} /><small id="game-size-help">От {MIN_GAME_ITEMS} до {itemLimit}{pairMode ? ' пар на одном поле' : ' заданий по одному'}</small></label>
           <label>Лимит времени, с<input className="input" type="number" inputMode="numeric" min={MIN_GAME_SECONDS} max={MAX_GAME_SECONDS} step={1} value={limitInput} aria-invalid={limit === null} aria-describedby="game-limit-help" onChange={e => setLimitInput(e.target.value)} /><small id="game-limit-help">Любое число от 1 до 300 секунд</small></label>
-          <label className="game-settings__wide">Размер карточек<select className="input" value={density} onChange={e => setDensity(e.target.value as 'comfortable' | 'compact')}><option value="comfortable">Обычные — текст крупнее</option><option value="compact">Компактные — больше на экране</option></select></label>
+          {pairMode && <label className="game-settings__wide">Размер карточек<select className="input" value={density} onChange={e => setDensity(e.target.value as 'comfortable' | 'compact')}><option value="comfortable">Обычные — текст крупнее</option><option value="compact">Компактные — больше на экране</option></select></label>}
         </div>
-        {loading || listsLoading ? <p role="status">Загружаю сотрудников…</p> : !validSettings ? <p className="game-ready__count answer-wrong" role="status">Укажите целое количество от 2 до 8 и время от 1 до 300 секунд.</p> : count < 2 || !enoughRoles ? <div className="card training-scope__alert" role="status"><p>{count < 2 ? hasTrainingFilter(scope) ? 'В выбранном составе нужны хотя бы два сотрудника с именем и должностью.' : 'Добавьте хотя бы двух сотрудников с именем и должностью в этот список.' : 'Для этой игры в выбранном составе нужны хотя бы две разные должности.'}</p>{hasTrainingFilter(scope) ? <button type="button" className="btn btn--ghost" onClick={() => { if (active) setSelection({ listId: active.id, value: ALL_TRAINING_EMPLOYEES }) }}>Сбросить выбор сотрудников</button> : <Link to="/employees">Открыть список</Link>}</div> : <p className="muted small game-ready__count">В этом раунде: {count} {pairMode ? count < 5 ? 'пары' : 'пар' : count < 5 ? 'задания' : 'заданий'}{pairMode ? ` · ${count * 2} карточек` : ''} · {limit} с.</p>}
+        {!pairMode && available.length >= MIN_GAME_ITEMS && <button className="btn btn--ghost game-all-people" disabled={loading || listsLoading} onClick={() => setSizeInput(String(Math.min(available.length, itemLimit)))}>Весь выбранный состав · {Math.min(available.length, itemLimit)} {itemsLabel(Math.min(available.length, itemLimit), false)}</button>}
+        {loading || listsLoading ? <p role="status">Загружаю сотрудников…</p> : !validSettings ? <p className="game-ready__count answer-wrong" role="status">Укажите целое количество от 2 до {itemLimit} и время от 1 до 300 секунд.</p> : count < 2 || !enoughRoles ? <div className="card training-scope__alert" role="status"><p>{count < 2 ? hasTrainingFilter(scope) ? 'В выбранном составе нужны хотя бы два сотрудника с именем и должностью.' : 'Добавьте хотя бы двух сотрудников с именем и должностью в этот список.' : 'Для этой игры в выбранном составе нужны хотя бы две разные должности.'}</p>{hasTrainingFilter(scope) ? <button type="button" className="btn btn--ghost" onClick={() => { if (active) setSelection({ listId: active.id, value: ALL_TRAINING_EMPLOYEES }) }}>Сбросить выбор сотрудников</button> : <Link to="/employees">Открыть список</Link>}</div> : <p className="muted small game-ready__count">В этом раунде: {count} {itemsLabel(count, pairMode)}{pairMode ? ` · ${count * 2} карточек` : ''} · {limit} с.{size !== null && size > available.length && <> Выбраны все доступные сотрудники: {available.length}.</>}</p>}
         {selectedPool.length > available.length && <p className="muted small">{selectedPool.length - available.length} сотрудников без имени или должности не участвуют в играх.</p>}
         {!loading && !listsLoading && count >= 2 && (scopeError ? <div className="training-scope__alert"><p className="answer-wrong" role="alert">{scopeError}</p><button type="button" className="btn btn--ghost" onClick={() => setScopeRetry(value => value + 1)}>Повторить подготовку состава</button></div> : !scopeKey && <p className="small muted" role="status">Подготавливаю выбранный состав…</p>)}
         <button className="btn btn--primary btn--block btn--lg" disabled={loading || listsLoading || !active || !scopeKey || !validSettings || count < 2 || !enoughRoles} onClick={start}>Начать игру</button>
@@ -254,16 +263,25 @@ export default function GameScreen({ mode }: { mode: GameMode }) {
           }}><span className="match-cell__kind">{kind === 'name' ? 'Сотрудник' : 'Должность'}</span><span className="match-cell__text">{kind === 'name' ? employee.full_name : employee.job_title}</span>{matched && <Icon name="check" />}</button>
         })}</div>
       </> : mode === 'memory' ? <>
-        <p className="game-board-hint">Откройте две карточки: <strong>имя</strong> и <strong>должность</strong>. Запоминайте, где они находятся.</p>
+        <div className="memory-step">
+          <div role="status"><strong>{busy ? feedback.tone === 'correct' ? 'Пара найдена' : 'Запомните эти карточки' : firstMemoryTile ? firstMemoryTile.kind === 'name' ? 'Теперь найдите должность' : 'Теперь найдите имя' : 'Откройте имя или должность'}</strong><p>{busy ? feedback.text : firstMemoryTile ? firstMemoryTile.kind === 'name' ? 'Открыто имя. Выберите карточку «Должность».' : 'Открыта должность. Выберите карточку «Имя».' : 'Ищите пару: имя и должность этого человека.'}</p></div>
+          <button type="button" className="btn btn--ghost" disabled={revealed.length !== 1 || busy} onClick={() => { if (canAnswer()) { setRevealed([]); setFeedback({ text: '', tone: '', tiles: [] }) } }}>Отменить выбор</button>
+        </div>
         <div className="match-board memory-board" aria-label="Закрытые имена и должности">{round.tiles.map((tile, index) => {
           const { employee, kind, key } = tile
           const matched = (kind === 'name' ? matchedNames : matchedRoles).includes(employee.id)
           const open = matched || revealed.includes(key)
           const wrong = feedback.tone === 'wrong' && feedback.tiles.includes(key)
-          return <button key={key} data-kind={kind} data-employee-id={employee.id} className={`match-cell memory-cell match-cell--${kind}${open ? ' is-flipped' : ''}${matched ? ' is-matched' : ''}${wrong ? ' is-wrong' : ''}`} disabled={matched || busy} aria-pressed={open} aria-label={open ? `${kind === 'name' ? 'Сотрудник' : 'Должность'}: ${kind === 'name' ? employee.full_name : employee.job_title}` : `Открыть карточку ${index + 1}: ${kind === 'name' ? 'сотрудник' : 'должность'}`} onClick={() => revealTile(tile)}><span className="match-cell__kind">{kind === 'name' ? 'Сотрудник' : 'Должность'}</span>{open ? <span className="match-cell__text">{kind === 'name' ? employee.full_name : employee.job_title}</span> : <span className="memory-cell__back"><Icon name="cards" /><span>{index + 1}</span></span>}{matched && <Icon name="check" />}</button>
+          const unavailableType = revealed.length === 1 && firstMemoryTile?.kind === kind && firstMemoryTile.key !== key && !matched
+          const label = kind === 'name' ? 'Имя' : 'Должность'
+          return <button key={key} data-kind={kind} data-employee-id={employee.id} className={`match-cell memory-cell match-cell--${kind}${open ? ' is-flipped' : ''}${matched ? ' is-matched' : ''}${wrong ? ' is-wrong' : ''}${unavailableType ? ' is-unavailable-type' : ''}${!open && !matched && !busy && revealed.length === 1 && !unavailableType ? ' is-next-type' : ''}`} disabled={matched || busy || unavailableType} aria-pressed={open} aria-label={matched ? `Пара найдена. ${label}: ${kind === 'name' ? employee.full_name : employee.job_title}` : open ? `${label}: ${kind === 'name' ? employee.full_name : employee.job_title}. Нажмите повторно, чтобы отменить выбор.` : `Открыть карточку ${index + 1}: ${label.toLocaleLowerCase('ru')}`} onClick={() => revealTile(tile)}>
+            <span className="memory-cell__type"><Icon name={kind === 'name' ? 'user' : 'briefcase'} />{label}</span>
+            <span className="memory-cell__content"><span className="match-cell__text" aria-hidden={!open}>{kind === 'name' ? employee.full_name : employee.job_title}</span>{!open && <span className="memory-cell__back">{unavailableType ? 'Выберите другой тип' : 'Открыть'}</span>}</span>
+            <span className="memory-cell__position" aria-hidden="true">{index + 1}</span>{matched && <span className="memory-cell__found"><Icon name="check" />Найдено</span>}
+          </button>
         })}</div>
       </> : mode === 'truth' && matchedNames.length < round.people.length ? <section className="quiz-board truth-board"><p className="eyebrow">ВЕРНА ЛИ ЭТА ПАРА?</p><h2 className="truth-person">{round.statements[matchedNames.length].person.full_name}</h2><div className="truth-role"><Icon name="briefcase" /><span>{round.statements[matchedNames.length].role}</span></div><div className="truth-options">{[true, false].map(value => <button key={String(value)} className={`match-cell${truthChoice === value ? feedback.tone === 'correct' ? ' is-correct' : ' is-wrong' : ''}`} disabled={busy} aria-pressed={truthChoice === value} onClick={() => answerTruth(value)}><Icon name={value ? 'check' : 'close'} /><span>{value ? 'Верно' : 'Неверно'}</span></button>)}</div></section> : mode === 'quiz' && matchedNames.length < round.people.length && <section className="quiz-board"><p className="eyebrow">КАКУЮ ДОЛЖНОСТЬ ЗАНИМАЕТ</p><h2>{round.people[matchedNames.length].full_name}</h2><div className="quiz-options">{round.options[matchedNames.length].map(value => <button key={`${matchedNames.length}-${value}`} className={`match-cell${failedOptions.includes(value) ? ' is-wrong' : ''}${correctOption === value ? ' is-correct' : ''}`} disabled={busy || failedOptions.includes(value)} onClick={() => chooseOption(value)}><span>{value}</span>{correctOption === value && <Icon name="check" />}</button>)}</div></section>}
-      <p className={`game-feedback${feedback.tone ? ` is-${feedback.tone}` : ''}`} role="status">{feedback.text || 'Выберите подходящий ответ.'}</p>
+      {mode !== 'memory' && <p className={`game-feedback${feedback.tone ? ` is-${feedback.tone}` : ''}`} role="status">{feedback.text || 'Выберите подходящий ответ.'}</p>}
       <button className="btn btn--ghost btn--block" disabled={busy} onClick={() => { if (window.confirm('Завершить раунд? Незаконченный результат не сохранится.')) { finished.current = true; if (lockTimer.current) clearTimeout(lockTimer.current); setPhase('ready') } }}>Завершить раунд</button>
     </>}
     {(phase === 'done' || phase === 'timeout') && round && <>

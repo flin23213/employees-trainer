@@ -20,7 +20,7 @@ export const GAME_META: Record<GameMode, { title: string; description: string; e
   },
   memory: {
     title: 'Память',
-    description: 'Открывайте по две карточки. Запоминайте их расположение и находите пары «имя — должность».',
+    description: 'Имена и должности скрыты. Откройте имя, найдите должность этого человека и запомните, где лежат карточки.',
     eyebrow: 'Память и внимание', pairMode: true,
   },
 }

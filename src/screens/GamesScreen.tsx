@@ -16,6 +16,6 @@ export default function GamesScreen() {
         <span className="eyebrow">{GAME_META[mode].eyebrow}</span><h2>{GAME_META[mode].title}</h2>
         <p>{GAME_META[mode].description}</p><span className="game-tile__cta">Играть <Icon name="arrow" /></span></Link>)}
     </div>
-    <p className="muted small">Для игры нужны хотя бы два сотрудника. В «Быстром ответе» и «Верно или нет» — ещё и разные должности. Рекорды видны только вам, отдельно для каждого списка, игры и размера раунда.</p>
+    <p className="muted small">В «Быстром ответе» и «Верно или нет» — до 100 заданий по одному. В «Найди пару» и «Памяти» — до 8 пар на общем поле. Нужны хотя бы два сотрудника, для последовательных игр — разные должности. Рекорды видны только вам, отдельно для каждого списка, состава, игры и настроек раунда.</p>
   </div>
 }
